@@ -57,6 +57,18 @@ class DesktopPreferences(context: Context) {
                 .apply()
         }
 
+    var bottomBarHeightDp: Int
+        get() = preferences.getInt(KEY_BOTTOM_BAR_HEIGHT, DEFAULT_BOTTOM_BAR_HEIGHT)
+            .coerceIn(MIN_BOTTOM_BAR_HEIGHT, MAX_BOTTOM_BAR_HEIGHT)
+        set(value) {
+            preferences.edit()
+                .putInt(
+                    KEY_BOTTOM_BAR_HEIGHT,
+                    value.coerceIn(MIN_BOTTOM_BAR_HEIGHT, MAX_BOTTOM_BAR_HEIGHT)
+                )
+                .apply()
+        }
+
     fun windowPackage(index: Int): String? =
         preferences.getString(KEY_WINDOW_PACKAGE_PREFIX + index, null)
 
@@ -93,10 +105,14 @@ class DesktopPreferences(context: Context) {
         private const val KEY_BACKGROUND_TYPE = "background_type"
         private const val KEY_CARD_RATIOS = "card_ratios"
         private const val KEY_SECONDARY_WIDTH_RATIO = "secondary_width_ratio"
+        private const val KEY_BOTTOM_BAR_HEIGHT = "bottom_bar_height_dp"
         private const val KEY_WINDOW_PACKAGE_PREFIX = "window_package_"
 
         private const val DEFAULT_RATIO = 1f / 3f
         const val MIN_RATIO = 0.2f
         const val MAX_RATIO = 0.8f
+        const val MIN_BOTTOM_BAR_HEIGHT = 72
+        const val MAX_BOTTOM_BAR_HEIGHT = 160
+        const val DEFAULT_BOTTOM_BAR_HEIGHT = 104
     }
 }

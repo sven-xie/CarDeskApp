@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<exceptions>
+    <exception package="com.sven.cardesk">
+        <!-- CarDesk is the system desktop; grant Bluetooth control at install. -->
+        <permission name="android.permission.BLUETOOTH_CONNECT" fixed="true" />
+    </exception>
+</exceptions>

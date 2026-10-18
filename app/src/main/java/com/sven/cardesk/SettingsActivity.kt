@@ -57,6 +57,7 @@ class SettingsActivity : AppCompatActivity() {
         setupTheme()
         setupBackground()
         setupSecondary()
+        setupBottomBar()
         setupAbout()
         updateBackgroundUi()
     }
@@ -227,6 +228,32 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateSecondaryWidthLabel(progress: Int) {
         binding.secondaryWidthValue.text =
             getString(R.string.settings_secondary_width_value, progress)
+    }
+
+    private fun setupBottomBar() {
+        val height = preferences.bottomBarHeightDp
+        binding.bottomBarHeightSeek.min = DesktopPreferences.MIN_BOTTOM_BAR_HEIGHT
+        binding.bottomBarHeightSeek.max = DesktopPreferences.MAX_BOTTOM_BAR_HEIGHT
+        binding.bottomBarHeightSeek.progress = height
+        updateBottomBarHeightLabel(height)
+        binding.bottomBarHeightSeek.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    updateBottomBarHeightLabel(progress)
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    preferences.bottomBarHeightDp = seekBar.progress
+                }
+            }
+        )
+    }
+
+    private fun updateBottomBarHeightLabel(height: Int) {
+        binding.bottomBarHeightValue.text =
+            getString(R.string.settings_bottom_bar_height_value, height)
     }
 
     private fun updateSecondaryStatus() {

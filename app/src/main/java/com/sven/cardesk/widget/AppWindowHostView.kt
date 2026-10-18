@@ -1,5 +1,6 @@
 package com.sven.cardesk.widget
 
+import android.app.ActivityManager
 import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
@@ -15,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
+import android.view.View
 import android.widget.FrameLayout
 import com.sven.cardesk.R
 import com.sven.cardesk.core.display.SecondaryDisplayManager
@@ -52,6 +54,12 @@ class AppWindowHostView @JvmOverloads constructor(
     private var currentPackage: String? = null
     private var displayWidth = 0
     private var displayHeight = 0
+
+    val currentPackageName: String?
+        get() = currentPackage ?: requestedPackage
+
+    val currentLabel: String?
+        get() = requestedLabel
 
     private val inputManager: Any? = context.getSystemService(Context.INPUT_SERVICE)
     private val injectInputMethod = runCatching {
@@ -109,12 +117,17 @@ class AppWindowHostView @JvmOverloads constructor(
     fun launchApp(packageName: String, label: String? = null) {
         requestedPackage = packageName
         requestedLabel = label ?: resolveLabel(packageName)
+        // The TextureView must be visible to obtain a SurfaceTexture; the
+        // virtual display is created from that surface in onSurfaceTextureAvailable.
+        content.appTexture.visibility = View.VISIBLE
         onAppChanged?.invoke(requestedLabel)
         if (currentPackage == packageName && virtualDisplay != null) {
             launchRequestedApp()
             return
         }
         if (virtualDisplay != null) {
+            stopCurrentApp()
+            virtualDisplay?.display?.displayId?.let { SecondaryDisplayManager.finishTasksOnDisplay(it) }
             releaseVirtualDisplay()
         }
         if (virtualDisplay == null && outputSurface != null) {
@@ -124,8 +137,10 @@ class AppWindowHostView @JvmOverloads constructor(
     }
 
     fun clearApp() {
+        stopCurrentApp()
         requestedPackage = null
         requestedLabel = null
+        virtualDisplay?.display?.displayId?.let { SecondaryDisplayManager.finishTasksOnDisplay(it) }
         releaseVirtualDisplay()
         showPlaceholder(
             context.getString(R.string.window_empty_title),
@@ -278,6 +293,18 @@ class AppWindowHostView @JvmOverloads constructor(
         }
     }
 
+    private fun stopCurrentApp() {
+        val packageName = currentPackage ?: requestedPackage ?: return
+        val manager = context.getSystemService(ActivityManager::class.java) ?: return
+        runCatching {
+            manager.javaClass.methods.firstOrNull { method ->
+                method.name == "forceStopPackage" &&
+                    method.parameterTypes.size == 1 &&
+                    method.parameterTypes[0] == String::class.java
+            }?.invoke(manager, packageName)
+        }
+    }
+
     private fun releaseVirtualDisplay() {
         virtualDisplay?.release()
         virtualDisplay = null
@@ -285,7 +312,7 @@ class AppWindowHostView @JvmOverloads constructor(
     }
 
     private fun showPlaceholder(title: String, subtitle: String) {
-        content.appTexture.visibility = GONE
+        content.appTexture.visibility = View.GONE
         content.appPlaceholder.visibility = VISIBLE
         content.placeholderTitle.text = title
         content.placeholderSubtitle.text = subtitle

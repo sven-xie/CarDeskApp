@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.sven.cardesk"
         minSdk = 29
-        targetSdk = 37
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -20,9 +20,10 @@ android {
 
     buildTypes {
         release {
+            // Keep R8 disabled: the optimized Kotlin collections triggered an
+            // IllegalAccessError on the Android 14 platform runtime.
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                enable = false
             }
         }
     }

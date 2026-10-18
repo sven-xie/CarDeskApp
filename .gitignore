@@ -1,15 +1,26 @@
+# Android Studio / IntelliJ local project files
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.idea/
+.gradle/
+
+# Local machine configuration (SDK path, etc.)
 local.properties
+
+# Build outputs
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS / editor
+.DS_Store
+
+# AOSP integration prebuilt binary.
+# Keep system/Android.bp and the permission XML files in git; rebuild the APK
+# with Gradle instead of committing this 9 MB binary.
+/system/MyCarDesk.apk
+
+# Signing material
+*.jks
+*.keystore

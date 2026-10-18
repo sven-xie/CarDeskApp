@@ -9,5 +9,9 @@
         <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
         <!-- Needed when a virtual window hosts a FLAG_SECURE app. -->
         <permission name="android.permission.CAPTURE_SECURE_VIDEO_OUTPUT" />
+        <!-- CPU usage / kernel temperature via HardwarePropertiesManager. -->
+        <permission name="android.permission.DEVICE_POWER" />
+        <!-- Closing a CarDesk window stops the app before releasing its display. -->
+        <permission name="android.permission.FORCE_STOP_PACKAGES" />
     </privapp-permissions>
 </permissions>

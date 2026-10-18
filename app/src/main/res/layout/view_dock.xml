@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/dockRoot"
     android:layout_width="match_parent"
-    android:layout_height="92dp"
+    android:layout_height="104dp"
     app:cardBackgroundColor="@color/dock_surface"
     app:cardCornerRadius="26dp"
     app:cardElevation="0dp"
@@ -11,270 +11,323 @@
     app:strokeWidth="1dp">
 
     <LinearLayout
+        android:id="@+id/dockBar"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="12dp">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_circle"
-                android:backgroundTint="@color/accent_yellow">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@string/dock_weather"
-                    android:src="@drawable/ic_sun"
-                    app:tint="@color/black" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="9dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/dockWeatherText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/weather_now"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:text="@string/weather_city"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <View
-            android:layout_width="1dp"
-            android:layout_height="32dp"
-            android:layout_marginHorizontal="10dp"
-            android:background="@color/divider" />
+        <ImageButton
+            android:id="@+id/dockMaster"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_quick_button"
+            android:backgroundTint="@color/accent_black"
+            android:contentDescription="@string/dock_collapse"
+            android:padding="10dp"
+            android:src="@drawable/ic_chevron_down"
+            app:tint="@color/white" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/dockSettings"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_quick_button"
-                android:backgroundTint="@color/accent_cyan"
-                android:contentDescription="@string/dock_settings"
-                android:padding="10dp"
-                android:src="@drawable/ic_settings"
-                app:tint="@color/white" />
-
-            <ImageButton
-                android:id="@+id/dockPower"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_quick_button"
-                android:backgroundTint="@color/accent_pink"
-                android:contentDescription="@string/dock_power"
-                android:padding="10dp"
-                android:src="@drawable/ic_power"
-                app:tint="@color/white" />
-
-            <ImageButton
-                android:id="@+id/dockLayers"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_quick_button"
-                android:backgroundTint="@color/accent_purple"
-                android:contentDescription="@string/dock_layers"
-                android:padding="10dp"
-                android:src="@drawable/ic_layers"
-                app:tint="@color/white" />
-
-            <ImageButton
-                android:id="@+id/dockBrightness"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_quick_button"
-                android:backgroundTint="@color/accent_gray"
-                android:contentDescription="@string/dock_brightness"
-                android:padding="10dp"
-                android:src="@drawable/ic_brightness"
-                app:tint="@color/white" />
-
-            <ImageButton
-                android:id="@+id/dockRecents"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_quick_button"
-                android:backgroundTint="@color/accent_blue"
-                android:contentDescription="@string/dock_recents"
-                android:padding="10dp"
-                android:src="@drawable/ic_recents"
-                app:tint="@color/white" />
-
-            <ImageButton
-                android:id="@+id/dockApps"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_quick_button"
-                android:backgroundTint="@color/accent_black"
-                android:contentDescription="@string/dock_apps"
-                android:padding="10dp"
-                android:src="@drawable/ic_apps"
-                app:tint="@color/white" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="1dp"
-            android:layout_height="32dp"
-            android:layout_marginHorizontal="10dp"
-            android:background="@color/divider" />
-
-        <LinearLayout
+            android:id="@+id/dockContent"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <FrameLayout
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="9dp"
+                android:background="@color/divider" />
+
+            <ImageButton
+                android:id="@+id/dockMenu"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:background="@drawable/bg_album_art"
-                android:clipToOutline="true"
-                android:outlineProvider="background">
+                android:background="@drawable/bg_quick_button"
+                android:backgroundTint="@color/accent_cyan"
+                android:contentDescription="@string/dock_menu"
+                android:padding="10dp"
+                android:src="@drawable/ic_apps"
+                app:tint="@color/white" />
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@string/media_song"
-                    android:src="@drawable/ic_music"
-                    app:tint="@color/white" />
-            </FrameLayout>
+            <ImageButton
+                android:id="@+id/dockSettings"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_quick_button"
+                android:backgroundTint="@color/accent_gray"
+                android:contentDescription="@string/dock_settings"
+                android:padding="10dp"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/white" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="9dp"
+                android:background="@color/divider" />
 
             <LinearLayout
+                android:id="@+id/dockMusicSection"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="9dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-medium"
-                    android:maxLines="1"
-                    android:text="@string/media_song"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/media_artist"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <ImageButton
-                android:id="@+id/dockPrevious"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/media_previous"
-                android:src="@drawable/ic_prev"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/dockPlayPause"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/media_pause"
-                android:src="@drawable/ic_pause"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/dockNext"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/media_next"
-                android:src="@drawable/ic_next"
-                app:tint="@color/text_primary" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="1dp"
-            android:layout_height="32dp"
-            android:layout_marginHorizontal="10dp"
-            android:background="@color/divider" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:paddingStart="2dp">
-
-            <TextView
-                android:id="@+id/dockClock"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/dock_clock"
-                android:textColor="@color/text_primary"
-                android:textSize="22sp" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_signal"
-                    app:tint="@color/text_secondary" />
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_album_art"
+                    android:clipToOutline="true"
+                    android:outlineProvider="background">
 
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="4dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_wifi"
-                    app:tint="@color/text_secondary" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/media_song"
+                        android:src="@drawable/ic_music"
+                        app:tint="@color/white" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/dockMediaTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-medium"
+                        android:maxLines="1"
+                        android:text="@string/media_song"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/dockMediaArtist"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/media_artist"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/dockPrevious"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/media_previous"
+                    android:src="@drawable/ic_prev"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/dockPlayPause"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/media_pause"
+                    android:src="@drawable/ic_pause"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/dockNext"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/media_next"
+                    android:src="@drawable/ic_next"
+                    app:tint="@color/text_primary" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="9dp"
+                android:background="@color/divider" />
+
+            <LinearLayout
+                android:id="@+id/dockPerfSection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/dockCpu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:minWidth="68dp"
+                        android:text="CPU --"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/dockGpu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:minWidth="68dp"
+                        android:text="GPU --"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/dockMem"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:minWidth="68dp"
+                        android:text="MEM --"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/dockTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:minWidth="68dp"
+                        android:text="--°C"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="9dp"
+                android:background="@color/divider" />
+
+            <LinearLayout
+                android:id="@+id/dockIoSection"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/dockBluetooth"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_quick_button"
+                        android:backgroundTint="@color/accent_blue"
+                        android:contentDescription="@string/dock_bluetooth"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_bluetooth"
+                        app:tint="@color/white" />
+
+                    <TextView
+                        android:id="@+id/dockBtStatus"
+                        android:layout_width="72dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="@string/dock_bt_off"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="9sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/dockWifi"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_quick_button"
+                        android:backgroundTint="@color/accent_cyan"
+                        android:contentDescription="@string/dock_wifi"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_wifi"
+                        app:tint="@color/white" />
+
+                    <TextView
+                        android:id="@+id/dockWifiStatus"
+                        android:layout_width="72dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="@string/dock_wifi_off"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="9sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="9dp"
+                android:background="@color/divider" />
+
+            <LinearLayout
+                android:id="@+id/dockClockSection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical|end"
+                android:orientation="vertical"
+                android:paddingStart="2dp">
+
+                <TextView
+                    android:id="@+id/dockDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dock_date"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/dockClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/dock_clock"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

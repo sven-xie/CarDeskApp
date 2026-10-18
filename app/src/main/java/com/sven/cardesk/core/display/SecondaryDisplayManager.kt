@@ -105,6 +105,51 @@ object SecondaryDisplayManager {
     }
 
     /**
+     * Finish tasks hosted by one of CarDesk's virtual displays before the
+     * display is released. Without this, ActivityTaskManager moves the task
+     * to the default display and the app appears full-screen over the desktop.
+     */
+    @Suppress("PrivateApi", "DiscouragedPrivateApi")
+    fun finishTasksOnDisplay(displayId: Int) {
+        runCatching {
+            val atmClass = Class.forName("android.app.ActivityTaskManager")
+            val service = atmClass.getMethod("getService").invoke(null) ?: return
+            val getTasks = service.javaClass.methods.firstOrNull { method ->
+                method.name == "getTasks" &&
+                    method.parameterTypes.firstOrNull() == Int::class.javaPrimitiveType
+            } ?: return
+
+            val args = arrayOfNulls<Any>(getTasks.parameterTypes.size)
+            args[0] = 20
+            for (index in 1 until args.size) {
+                args[index] = when (getTasks.parameterTypes[index]) {
+                    Boolean::class.javaPrimitiveType -> false
+                    Int::class.javaPrimitiveType ->
+                        if (index == getTasks.parameterTypes.lastIndex) displayId else 0
+                    else -> null
+                }
+            }
+            val tasks = runCatching {
+                (getTasks.invoke(service, *args) as? List<*>)?.filterIsInstance<Any>().orEmpty()
+            }.getOrDefault(emptyList())
+
+            val removeTask = service.javaClass.methods.firstOrNull { method ->
+                method.name == "removeTask" &&
+                    method.parameterTypes.size == 1 &&
+                    method.parameterTypes[0] == Int::class.javaPrimitiveType
+            } ?: return
+
+            tasks.forEach { task ->
+                if (taskDisplayId(task) == displayId) {
+                    readInt(task, "taskId")?.let { taskId ->
+                        runCatching { removeTask.invoke(service, taskId) }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Best-effort live resize of the running task on the secondary display.
      * Some Android builds do not expose this as a public API; failure is logged and does not
      * affect the next launch, which always uses the latest width ratio.

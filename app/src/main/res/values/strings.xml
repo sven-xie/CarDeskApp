@@ -48,11 +48,18 @@
     <string name="map_road_name_secondary">吕岭路</string>
 
     <string name="dock_settings">设置</string>
-    <string name="dock_power">电源</string>
-    <string name="dock_layers">卡片</string>
-    <string name="dock_brightness">亮度</string>
-    <string name="dock_recents">最近任务</string>
-    <string name="dock_apps">应用</string>
+    <string name="dock_menu">应用列表</string>
+    <string name="dock_collapse">收起操作栏</string>
+    <string name="dock_expand">展开操作栏</string>
+    <string name="dock_bluetooth">蓝牙</string>
+    <string name="dock_wifi">WiFi</string>
+    <string name="dock_bt_on">蓝牙 已开启</string>
+    <string name="dock_bt_off">蓝牙 关闭</string>
+    <string name="dock_bt_unavailable">蓝牙 不可用</string>
+    <string name="dock_wifi_on">WiFi 已开启</string>
+    <string name="dock_wifi_off">WiFi 关闭</string>
+    <string name="dock_wifi_unavailable">WiFi 不可用</string>
+    <string name="dock_toggle_failed">无法切换连接状态</string>
     <string name="dock_clock">15:22</string>
     <string name="dock_date">周六 10月17日</string>
     <string name="dock_weather">晴 / 31°C</string>
@@ -73,6 +80,8 @@
     <string name="window_empty_title">选择应用</string>
     <string name="window_empty_subtitle">点击从应用列表启动</string>
     <string name="window_choose_app">选择应用</string>
+    <string name="window_close">关闭窗口</string>
+    <string name="window_drag">拖动窗口</string>
     <string name="window_start_failed">无法启动应用</string>
     <string name="window_display_failed">副屏窗口初始化失败</string>
 
@@ -102,6 +111,12 @@
     <string name="settings_secondary_width_hint">拖动桌面窗口之间的分隔条可调整宽度，窗口内的虚拟副屏会同步缩放。这里的比例对应最右侧窗口。</string>
     <string name="settings_secondary_narrow">窄</string>
     <string name="settings_secondary_wide">宽</string>
+    <string name="settings_bottom_bar">底部操作栏</string>
+    <string name="settings_bottom_bar_height">操作栏高度</string>
+    <string name="settings_bottom_bar_height_value">%1$d dp</string>
+    <string name="settings_bottom_bar_hint">拖动滑块调整底部操作栏高度；点击最左侧总按钮可收起/恢复操作栏。</string>
+    <string name="settings_bottom_bar_narrow">矮</string>
+    <string name="settings_bottom_bar_wide">高</string>
     <string name="settings_about">关于</string>
     <string name="settings_version">版本 %1$s</string>
     <string name="settings_package">包名：%1$s</string>

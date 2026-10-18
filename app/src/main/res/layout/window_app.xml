@@ -10,70 +10,107 @@
     app:strokeColor="@color/card_stroke"
     app:strokeWidth="1dp">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="14dp">
 
-                <View
-                    android:layout_width="6dp"
-                    android:layout_height="6dp"
-                    android:layout_margin="3dp"
-                    android:background="@drawable/bg_drag_dot" />
+                <TextView
+                    android:id="@+id/windowTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:text="@string/app_name"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
 
-                <View
-                    android:layout_width="6dp"
-                    android:layout_height="6dp"
-                    android:layout_margin="3dp"
-                    android:background="@drawable/bg_drag_dot" />
+                <LinearLayout
+                    android:id="@+id/windowDragHandle"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/window_drag"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
-                <View
-                    android:layout_width="6dp"
-                    android:layout_height="6dp"
-                    android:layout_margin="3dp"
-                    android:background="@drawable/bg_drag_dot" />
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="5dp"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_drag_dot" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="5dp"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_drag_dot" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="5dp"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_drag_dot" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="end|center_vertical">
+
+                    <ImageButton
+                        android:id="@+id/windowClose"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/window_close"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_close"
+                        app:tint="@color/text_secondary" />
+                </FrameLayout>
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/windowTitle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-medium"
-                android:maxLines="1"
-                android:text="@string/app_name"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
-
-            <ImageButton
-                android:id="@+id/windowChooseApp"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/window_choose_app"
-                android:padding="8dp"
-                android:src="@drawable/ic_apps"
-                app:tint="@color/text_secondary" />
+            <com.sven.cardesk.widget.AppWindowHostView
+                android:id="@+id/appWindowHost"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
         </LinearLayout>
 
-        <com.sven.cardesk.widget.AppWindowHostView
-            android:id="@+id/appWindowHost"
+        <FrameLayout
+            android:id="@+id/resizeOverlay"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-    </LinearLayout>
+            android:layout_height="match_parent"
+            android:background="@color/card_surface"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/resizeAppIcon"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_apps"
+                app:tint="@color/text_secondary" />
+        </FrameLayout>
+    </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

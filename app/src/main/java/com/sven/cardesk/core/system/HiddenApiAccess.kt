@@ -28,7 +28,8 @@ object HiddenApiAccess {
                     "Landroid/hardware/input/InputManager;",
                     "Landroid/view/MotionEvent;",
                     "Landroid/view/InputEvent;",
-                    "Landroid/app/ActivityTaskManager;"
+                    "Landroid/app/ActivityTaskManager;",
+                    "Landroid/app/ActivityManager;"
                 )
             )
         }.onFailure {
