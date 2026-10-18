@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyCarDesk</string>
+
+    <string name="greeting_afternoon">下午好，欢迎上车</string>
+    <string name="greeting_morning">早上好，欢迎上车</string>
+    <string name="greeting_evening">晚上好，欢迎上车</string>
+    <string name="date_placeholder">10月17日 星期六</string>
+    <string name="weather_now">晴 / 31°C</string>
+    <string name="weather_city">福建 · 石狮市</string>
+
+    <string name="driving_distance_to_turn">距离:100米</string>
+    <string name="driving_turn_left">左转</string>
+    <string name="driving_turn_straight">直行</string>
+    <string name="driving_turn_distance_value">21</string>
+    <string name="distance_unit_meter">米</string>
+    <string name="driving_speed_value">29</string>
+    <string name="driving_speed_unit">km/h</string>
+    <string name="driving_trip_distance">行驶距离</string>
+    <string name="driving_trip_distance_value">6.6</string>
+    <string name="driving_trip_distance_unit">km</string>
+    <string name="driving_trip_time">行驶时长</string>
+    <string name="driving_trip_time_value">10</string>
+    <string name="driving_trip_time_unit">分钟</string>
+
+    <string name="media_source">本地音乐</string>
+    <string name="media_song">花海</string>
+    <string name="media_artist">周杰伦</string>
+    <string name="media_lyric_previous">爱成了阻碍</string>
+    <string name="media_lyric_current">手中的风筝放太快回不来</string>
+    <string name="media_lyric_next">不要你离开</string>
+    <string name="media_time_current">01:40</string>
+    <string name="media_time_total">04:24</string>
+    <string name="media_play">播放</string>
+    <string name="media_pause">暂停</string>
+    <string name="media_previous">上一首</string>
+    <string name="media_next">下一首</string>
+
+    <string name="map_secondary_prefix">副屏窗口</string>
+    <string name="map_secondary_window_value">副屏窗口 %1$d%%</string>
+    <string name="map_secondary_connected">副屏已连接</string>
+    <string name="map_secondary_disconnected">未检测到副屏</string>
+    <string name="map_secondary_connected_size">副屏已连接 · %1$d×%2$d</string>
+    <string name="map_speed_value">21</string>
+    <string name="map_speed_limit_unit">km/h</string>
+    <string name="map_time">15:22</string>
+    <string name="map_road_name">前埔路</string>
+    <string name="map_road_name_secondary">吕岭路</string>
+
+    <string name="dock_settings">设置</string>
+    <string name="dock_power">电源</string>
+    <string name="dock_layers">卡片</string>
+    <string name="dock_brightness">亮度</string>
+    <string name="dock_recents">最近任务</string>
+    <string name="dock_apps">应用</string>
+    <string name="dock_clock">15:22</string>
+    <string name="dock_date">周六 10月17日</string>
+    <string name="dock_weather">晴 / 31°C</string>
+
+    <string name="apps_title">应用</string>
+    <string name="apps_title_window">应用 · 窗口 %1$d</string>
+    <string name="apps_search_hint">搜索应用</string>
+    <string name="apps_close">关闭</string>
+    <string name="apps_empty">没有找到应用</string>
+    <string name="apps_loading">正在加载应用…</string>
+    <string name="apps_launch_no_secondary">未检测到副屏，已取消启动</string>
+    <string name="apps_launch_failed">无法启动该应用</string>
+    <string name="apps_launched_secondary">已在副屏启动：%1$s</string>
+    <string name="apps_launched_primary_debug">调试模式：已在主屏启动 %1$s</string>
+    <string name="apps_launched_window">已在窗口 %1$d 启动：%2$s</string>
+
+    <string name="window_default_title">窗口 %1$d</string>
+    <string name="window_empty_title">选择应用</string>
+    <string name="window_empty_subtitle">点击从应用列表启动</string>
+    <string name="window_choose_app">选择应用</string>
+    <string name="window_start_failed">无法启动应用</string>
+    <string name="window_display_failed">副屏窗口初始化失败</string>
+
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">深色模式</string>
+    <string name="settings_theme_summary">切换桌面与设置页的深色 / 浅色主题</string>
+    <string name="settings_background">桌面背景</string>
+    <string name="settings_background_summary">支持图片、GIF 动图和视频，内容会铺满桌面</string>
+    <string name="settings_pick_image">选择图片 / GIF</string>
+    <string name="settings_pick_video">选择视频</string>
+    <string name="settings_reset_background">恢复默认背景</string>
+    <string name="settings_background_default">默认渐变</string>
+    <string name="settings_background_unavailable">无法读取所选文件，请重新选择</string>
+    <string name="settings_background_selected">已设置背景：%1$s</string>
+    <string name="settings_background_type_image">图片 / GIF</string>
+    <string name="settings_background_type_video">视频</string>
+    <string name="settings_secondary">副屏窗口</string>
+    <string name="settings_virtual_windows">桌面副屏窗口：%1$d 个</string>
+    <string name="settings_secondary_status">物理副屏：%1$s</string>
+    <string name="settings_secondary_connected">已连接</string>
+    <string name="settings_secondary_disconnected">未连接</string>
+    <string name="settings_secondary_connected_size">已连接 · %1$d×%2$d</string>
+    <string name="settings_secondary_width">右侧窗口宽度</string>
+    <string name="settings_secondary_width_value">%1$d%%</string>
+    <string name="settings_secondary_width_hint">拖动桌面窗口之间的分隔条可调整宽度，窗口内的虚拟副屏会同步缩放。这里的比例对应最右侧窗口。</string>
+    <string name="settings_secondary_narrow">窄</string>
+    <string name="settings_secondary_wide">宽</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本 %1$s</string>
+    <string name="settings_package">包名：%1$s</string>
+    <string name="settings_about_summary">MyCarDesk 车机桌面 · ViewBinding 实现</string>
+    <string name="settings_preview">背景预览</string>
+
+    <string name="secondary_title">副屏已连接</string>
+    <string name="secondary_subtitle">请在主屏选择要打开的应用</string>
+    <string name="secondary_window_label">副屏应用区域</string>
+
+    <string name="feature_coming_soon">该功能将在后续版本开放</string>
+    <string name="power_dialog_title">电源</string>
+    <string name="power_dialog_message">电源操作需要系统权限，当前版本仅保留入口。</string>
+    <string name="power_dialog_ok">知道了</string>
+    <string name="drag_handle_desc">拖动调整窗口宽度</string>
+</resources>

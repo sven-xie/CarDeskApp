@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <privapp-permissions package="com.sven.cardesk">
+        <!-- Needed to inject touch events into the three virtual app windows. -->
+        <permission name="android.permission.INJECT_EVENTS" />
+        <!-- Needed to launch and manage third-party tasks on virtual displays. -->
+        <permission name="android.permission.MANAGE_ACTIVITY_TASKS" />
+        <permission name="android.permission.INTERNAL_SYSTEM_WINDOW" />
+        <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+        <!-- Needed when a virtual window hosts a FLAG_SECURE app. -->
+        <permission name="android.permission.CAPTURE_SECURE_VIDEO_OUTPUT" />
+    </privapp-permissions>
+</permissions>

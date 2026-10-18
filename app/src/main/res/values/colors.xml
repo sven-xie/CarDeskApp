@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="desktop_background">#F2F0EB</color>
+    <color name="desktop_background_alt">#E4E0D7</color>
+    <color name="card_surface">#FBFAF7</color>
+    <color name="card_surface_alt">#F1EEE8</color>
+    <color name="card_stroke">#1A000000</color>
+    <color name="dock_surface">#FCFBF8</color>
+    <color name="settings_background">#F2F0EB</color>
+    <color name="search_bg">#EEEBE5</color>
+
+    <color name="text_primary">#17181A</color>
+    <color name="text_secondary">#6D6F73</color>
+    <color name="text_tertiary">#A0A1A5</color>
+    <color name="divider">#1F000000</color>
+    <color name="background_scrim">#26000000</color>
+    <color name="drawer_scrim">#73000000</color>
+    <color name="ripple_light">#33FFFFFF</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <color name="accent_red">#FF3B1F</color>
+    <color name="accent_orange">#FF6A00</color>
+    <color name="accent_yellow">#FFD54A</color>
+    <color name="accent_cyan">#00C7B7</color>
+    <color name="accent_pink">#FF2D78</color>
+    <color name="accent_purple">#7B61FF</color>
+    <color name="accent_gray">#8E8E93</color>
+    <color name="accent_blue">#0A84FF</color>
+    <color name="accent_black">#1C1C1E</color>
+    <color name="progress_track">#33FF3B1F</color>
+
+    <color name="map_bg">#EDF3EE</color>
+    <color name="map_water">#B9DDF3</color>
+    <color name="map_park">#D8EBD3</color>
+    <color name="map_road">#FFFFFF</color>
+    <color name="map_route">#12B5A5</color>
+    <color name="map_route_glow">#3312B5A5</color>
+    <color name="map_label">#5C6368</color>
+
+    <color name="album_start">#D9B36C</color>
+    <color name="album_end">#6B3F2A</color>
+    <color name="car_body">#F7F7F7</color>
+    <color name="car_window">#2C3440</color>
+    <color name="road">#D7D4CE</color>
+    <color name="road_line">#FFFFFF</color>
+    <color name="secondary_badge">#B3000000</color>
+</resources>
