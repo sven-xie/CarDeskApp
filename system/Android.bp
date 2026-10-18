@@ -1,19 +1,18 @@
-// MyCarDesk Android source integration.
-//
-// 1. Build the APK with Gradle.
-// 2. Copy it to this directory as MyCarDesk.apk.
-// 3. Add this directory to the product's PRODUCT_PACKAGES, e.g.:
-//      PRODUCT_PACKAGES += MyCarDesk
-// 4. If the product uses a different default launcher, adjust `overrides` below.
-//
-// `certificate: "platform"` re-signs the APK with the platform key when
-// `presigned` is false. If you provide an APK already signed with the platform
-// key, set `presigned: true` and remove `certificate`.
+// CarDesk (com.sven.cardesk) as a privileged, platform-signed system app.
+// Built APK: app-release-unsigned.apk from G:\workspace\MyCar\CarDeskApp,
+// compiled with compileSdk 37 / targetSdk 34 for this Android 14 system image.
 
 prebuilt_etc {
-    name: "privapp-permissions-mycardesk.xml",
+    name: "privapp-permissions-mycardesk",
     src: "privapp-permissions-mycardesk.xml",
     sub_dir: "permissions",
+    filename_from_src: true,
+}
+
+prebuilt_etc {
+    name: "default-permissions-mycardesk",
+    src: "default-permissions-mycardesk.xml",
+    sub_dir: "default-permissions",
     filename_from_src: true,
 }
 
@@ -22,9 +21,17 @@ android_app_import {
     apk: "MyCarDesk.apk",
     certificate: "platform",
     privileged: true,
-    // If this product includes Launcher3 and MyCarDesk should replace it, uncomment:
-    // overrides: ["Launcher3"],
-    required: ["privapp-permissions-mycardesk.xml"],
+    // CarDesk is the only HOME app in the tablet product.
+    overrides: [
+        "Launcher3QuickStep",
+        "Launcher3",
+        "Launcher3Go",
+        "Launcher3QuickStepGo",
+    ],
+    required: [
+        "privapp-permissions-mycardesk",
+        "default-permissions-mycardesk",
+    ],
     dex_preopt: {
         enabled: false,
     },
