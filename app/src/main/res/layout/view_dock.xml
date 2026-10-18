@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="104dp"
     app:cardBackgroundColor="@color/dock_surface"
-    app:cardCornerRadius="26dp"
+    app:cardCornerRadius="0dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/card_stroke"
     app:strokeWidth="1dp">
@@ -16,18 +16,7 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="12dp">
-
-        <ImageButton
-            android:id="@+id/dockMaster"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_quick_button"
-            android:backgroundTint="@color/accent_black"
-            android:contentDescription="@string/dock_collapse"
-            android:padding="10dp"
-            android:src="@drawable/ic_chevron_down"
-            app:tint="@color/white" />
+        android:paddingHorizontal="8dp">
 
         <LinearLayout
             android:id="@+id/dockContent"
@@ -36,12 +25,6 @@
             android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="32dp"
-                android:layout_marginHorizontal="9dp"
-                android:background="@color/divider" />
 
             <ImageButton
                 android:id="@+id/dockMenu"
@@ -81,6 +64,7 @@
                 android:orientation="horizontal">
 
                 <FrameLayout
+                    android:id="@+id/dockAlbumArt"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:background="@drawable/bg_album_art"
@@ -151,6 +135,51 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/media_next"
                     android:src="@drawable/ic_next"
+                    app:tint="@color/text_primary" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="9dp"
+                android:background="@color/divider" />
+
+            <LinearLayout
+                android:id="@+id/dockVolumeSection"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/dockVolumeDown"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/dock_volume_down"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_volume_down"
+                    app:tint="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/dockVolume"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:minWidth="38dp"
+                    android:text="60%"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp" />
+
+                <ImageButton
+                    android:id="@+id/dockVolumeUp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/dock_volume_up"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_volume_up"
                     app:tint="@color/text_primary" />
             </LinearLayout>
 

@@ -1,22 +1,30 @@
 package com.sven.cardesk
 
-import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.bluetooth.BluetoothManager
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.content.res.Configuration
+import android.media.AudioManager
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.Gravity
+import android.provider.Settings
+import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -58,12 +66,14 @@ class MainActivity : AppCompatActivity() {
     private var allApps: List<AppInfo> = emptyList()
     private var isDrawerOpen = false
     private var isPlaying = true
-    private var isDockCollapsed = false
+    private var isDockVisible = true
+    private var dockAnimator: ValueAnimator? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private val clockFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("M月d日 EEEE", Locale.CHINA)
     private val performanceMonitor by lazy { PerformanceMonitor(this) }
+    private val audioManager by lazy { getSystemService(AudioManager::class.java) }
 
     private val wifiManager: WifiManager? by lazy {
         applicationContext.getSystemService(WifiManager::class.java)
@@ -77,6 +87,7 @@ class MainActivity : AppCompatActivity() {
             updateClockAndDate()
             updatePerformance()
             updateConnectivityStatus()
+            updateVolume()
             handler.postDelayed(this, 2_000L)
         }
     }
@@ -111,7 +122,11 @@ class MainActivity : AppCompatActivity() {
         applyBottomBarHeight()
         updateClockAndDate()
         updateDockMediaIcon()
-        requestBluetoothPermissionIfNeeded()
+        updateVolume()
+        binding.dock.root.post {
+            applyDockScale()
+            updateDockTogglePosition()
+        }
     }
 
     override fun onResume() {
@@ -121,8 +136,10 @@ class MainActivity : AppCompatActivity() {
         applyBottomBarHeight()
         updateDockMediaIcon()
         updateClockAndDate()
+        updateVolume()
         handler.removeCallbacks(statusRunnable)
         handler.post(statusRunnable)
+        binding.dock.root.post { applyDockScale() }
     }
 
     override fun onPause() {
@@ -133,8 +150,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        dockAnimator?.cancel()
         handler.removeCallbacksAndMessages(null)
         backgroundController.release()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        binding.dock.root.post {
+            applyBottomBarHeight()
+            applyDockScale()
+            updateDockTogglePosition()
+        }
     }
 
     private fun setupWindows() {
@@ -308,7 +335,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupDock() {
-        binding.dock.dockMaster.setOnClickListener { toggleDock() }
         binding.dock.dockMenu.setOnClickListener { openAppDrawerForNextWindow() }
         binding.dock.dockSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -319,43 +345,227 @@ class MainActivity : AppCompatActivity() {
             isPlaying = !isPlaying
             updateDockMediaIcon()
         }
-        binding.dock.dockBluetooth.setOnClickListener { toggleBluetooth() }
-        binding.dock.dockWifi.setOnClickListener { toggleWifi() }
+        binding.dock.dockVolumeDown.setOnClickListener { adjustVolume(-1) }
+        binding.dock.dockVolumeUp.setOnClickListener { adjustVolume(1) }
+        binding.dock.dockBluetooth.setOnClickListener { openBluetoothSettings() }
+        binding.dock.dockWifi.setOnClickListener { openWifiSettings() }
+        binding.dockToggle.setOnClickListener { toggleDock() }
         updateDockMediaIcon()
+        updateVolume()
     }
 
     private fun toggleDock() {
-        isDockCollapsed = !isDockCollapsed
+        dockAnimator?.cancel()
         val root = binding.dock.root
-        val params = root.layoutParams as? LinearLayout.LayoutParams ?: return
-        if (isDockCollapsed) {
-            binding.dock.dockContent.visibility = View.GONE
-            params.width = dp(72)
-            params.height = dp(56)
-            params.gravity = Gravity.END
-            binding.dock.dockMaster.rotation = 180f
-            binding.dock.dockMaster.contentDescription = getString(R.string.dock_expand)
+        val toggle = binding.dockToggle
+        val targetHeight = dp(preferences.bottomBarHeightDp)
+        val fromVisible = isDockVisible
+        val startHeight = if (fromVisible) {
+            root.height.takeIf { it > 0 } ?: targetHeight
         } else {
-            binding.dock.dockContent.visibility = View.VISIBLE
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT
-            params.height = dp(preferences.bottomBarHeightDp)
-            params.gravity = Gravity.NO_GRAVITY
-            binding.dock.dockMaster.rotation = 0f
-            binding.dock.dockMaster.contentDescription = getString(R.string.dock_collapse)
+            0
         }
-        root.layoutParams = params
-        root.requestLayout()
+        val rootParams = root.layoutParams as? LinearLayout.LayoutParams ?: return
+        val toggleParams = toggle.layoutParams as? FrameLayout.LayoutParams ?: return
+
+        val startMargin = toggleParams.bottomMargin
+        val endMargin = if (fromVisible) dp(8) else (targetHeight - dp(10)).coerceAtLeast(dp(8))
+        val startRotation = toggle.rotation
+        val endRotation = if (fromVisible) 180f else 0f
+
+        if (!fromVisible) {
+            isDockVisible = true
+            root.visibility = View.VISIBLE
+            rootParams.height = 0
+            root.layoutParams = rootParams
+            root.alpha = 0f
+            root.translationY = targetHeight.toFloat()
+            toggle.rotation = 180f
+        }
+
+        dockAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 260L
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { animation ->
+                val fraction = animation.animatedValue as Float
+                val height = if (fromVisible) {
+                    startHeight * (1f - fraction)
+                } else {
+                    targetHeight * fraction
+                }
+                rootParams.height = height.roundToInt().coerceAtLeast(0)
+                root.layoutParams = rootParams
+                root.translationY = if (fromVisible) {
+                    startHeight * fraction
+                } else {
+                    targetHeight * (1f - fraction)
+                }
+                root.alpha = if (fromVisible) 1f - fraction else fraction
+                toggleParams.bottomMargin =
+                    (startMargin + (endMargin - startMargin) * fraction).roundToInt()
+                toggle.layoutParams = toggleParams
+                toggle.rotation = startRotation + (endRotation - startRotation) * fraction
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (fromVisible) {
+                        root.visibility = View.GONE
+                        root.alpha = 1f
+                        root.translationY = 0f
+                        rootParams.height = 0
+                        root.layoutParams = rootParams
+                        isDockVisible = false
+                        toggle.contentDescription = getString(R.string.dock_expand)
+                    } else {
+                        root.visibility = View.VISIBLE
+                        root.alpha = 1f
+                        root.translationY = 0f
+                        rootParams.height = targetHeight
+                        root.layoutParams = rootParams
+                        isDockVisible = true
+                        toggle.contentDescription = getString(R.string.dock_collapse)
+                    }
+                    dockAnimator = null
+                    updateDockTogglePosition()
+                    applyDockScale()
+                }
+            })
+            start()
+        }
     }
 
     private fun applyBottomBarHeight() {
-        if (isDockCollapsed) return
-        val root = binding.dock.root
-        val params = root.layoutParams as? LinearLayout.LayoutParams ?: return
-        params.width = ViewGroup.LayoutParams.MATCH_PARENT
-        params.height = dp(preferences.bottomBarHeightDp)
-        params.gravity = Gravity.NO_GRAVITY
-        root.layoutParams = params
-        root.requestLayout()
+        val targetHeight = dp(preferences.bottomBarHeightDp)
+        if (isDockVisible && dockAnimator?.isRunning != true) {
+            val root = binding.dock.root
+            val params = root.layoutParams as? LinearLayout.LayoutParams ?: return
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT
+            params.height = targetHeight
+            root.layoutParams = params
+            root.requestLayout()
+        }
+        updateDockTogglePosition()
+        binding.dock.root.post { applyDockScale() }
+    }
+
+    private fun updateDockTogglePosition() {
+        if (dockAnimator?.isRunning == true) return
+        val params = binding.dockToggle.layoutParams as? FrameLayout.LayoutParams ?: return
+        val targetHeight = dp(preferences.bottomBarHeightDp)
+        params.bottomMargin = if (isDockVisible) {
+            (targetHeight - dp(10)).coerceAtLeast(dp(8))
+        } else {
+            dp(8)
+        }
+        binding.dockToggle.layoutParams = params
+    }
+
+    private fun applyDockScale() {
+        val dock = binding.dock
+        val heightPx = dock.root.height.takeIf { it > 0 } ?: dp(preferences.bottomBarHeightDp)
+        val heightScale = heightPx / dpFloat(104f)
+        val widthScale = resources.displayMetrics.widthPixels / 1280f
+        val scale = min(heightScale, widthScale * 1.15f).coerceIn(0.62f, 1.6f)
+
+        resizeView(dock.dockMenu, 44, 44, scale, 10f)
+        resizeView(dock.dockSettings, 44, 44, scale, 10f)
+        resizeView(dock.dockAlbumArt, 44, 44, scale, 0f)
+        resizeView(dock.dockPrevious, 30, 30, scale, 0f)
+        resizeView(dock.dockPlayPause, 30, 30, scale, 0f)
+        resizeView(dock.dockNext, 30, 30, scale, 0f)
+        resizeView(dock.dockVolumeDown, 30, 30, scale, 6f)
+        resizeView(dock.dockVolumeUp, 30, 30, scale, 6f)
+        resizeView(dock.dockBluetooth, 38, 38, scale, 9f)
+        resizeView(dock.dockWifi, 38, 38, scale, 9f)
+
+        (dock.dockAlbumArt.getChildAt(0) as? ImageView)?.let { icon ->
+            val params = icon.layoutParams ?: return@let
+            params.width = dp(20f * scale)
+            params.height = dp(20f * scale)
+            icon.layoutParams = params
+        }
+
+        setTextSize(dock.dockMediaTitle, 13f, scale)
+        setTextSize(dock.dockMediaArtist, 10f, scale)
+        setTextSize(dock.dockCpu, 11f, scale)
+        setTextSize(dock.dockGpu, 11f, scale)
+        setTextSize(dock.dockMem, 11f, scale)
+        setTextSize(dock.dockTemp, 11f, scale)
+        setTextSize(dock.dockBtStatus, 9f, scale)
+        setTextSize(dock.dockWifiStatus, 9f, scale)
+        setTextSize(dock.dockDate, 10f, scale)
+        setTextSize(dock.dockClock, 20f, scale)
+        setTextSize(dock.dockVolume, 11f, scale)
+
+        val statusWidth = dp((72f * scale).coerceAtLeast(56f))
+        listOf(dock.dockBtStatus, dock.dockWifiStatus).forEach { status ->
+            status.layoutParams = status.layoutParams.apply { width = statusWidth }
+        }
+        val performanceMinWidth = dp((68f * scale).coerceAtLeast(52f))
+        listOf(dock.dockCpu, dock.dockGpu, dock.dockMem, dock.dockTemp).forEach { value ->
+            value.minWidth = performanceMinWidth
+        }
+
+        val horizontalPadding = dp(8f * scale)
+        dock.dockBar.setPadding(horizontalPadding, 0, horizontalPadding, 0)
+    }
+
+    private fun resizeView(
+        view: View,
+        widthDp: Int,
+        heightDp: Int,
+        scale: Float,
+        paddingDp: Float
+    ) {
+        val params = view.layoutParams ?: return
+        params.width = dp(widthDp * scale)
+        params.height = dp(heightDp * scale)
+        view.layoutParams = params
+        if (paddingDp > 0f && view is ImageButton) {
+            val padding = dp(paddingDp * scale)
+            view.setPadding(padding, padding, padding, padding)
+        }
+    }
+
+    private fun setTextSize(view: TextView, baseSp: Float, scale: Float) {
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, baseSp * scale)
+    }
+
+    private fun adjustVolume(direction: Int) {
+        val manager = audioManager ?: return
+        manager.adjustStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            if (direction > 0) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+            AudioManager.FLAG_SHOW_UI
+        )
+        updateVolume()
+    }
+
+    private fun updateVolume() {
+        val manager = audioManager ?: return
+        val maxVolume = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val currentVolume = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        binding.dock.dockVolume.text = if (maxVolume > 0) {
+            "${currentVolume * 100 / maxVolume}%"
+        } else {
+            "--"
+        }
+    }
+
+    private fun openWifiSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+        }.onFailure {
+            toast(getString(R.string.dock_wifi_unavailable))
+        }
+    }
+
+    private fun openBluetoothSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+        }.onFailure {
+            toast(getString(R.string.dock_bt_unavailable))
+        }
     }
 
     private fun setupAppDrawer() {
@@ -482,69 +692,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun toggleWifi() {
-        val wifi = wifiManager ?: run {
-            toast(getString(R.string.dock_wifi_unavailable))
-            return
-        }
-        val ok = runCatching { wifi.setWifiEnabled(!wifi.isWifiEnabled) }.getOrDefault(false)
-        if (!ok) {
-            toast(getString(R.string.dock_toggle_failed))
-        }
-        handler.postDelayed({ updateConnectivityStatus() }, 800L)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun toggleBluetooth() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                REQUEST_BLUETOOTH_PERMISSION
-            )
-            return
-        }
-        val adapter = runCatching { bluetoothManager?.adapter }.getOrNull() ?: run {
-            toast(getString(R.string.dock_bt_unavailable))
-            return
-        }
-        val enabled = runCatching { adapter.isEnabled }.getOrDefault(false)
-        val ok = runCatching {
-            if (enabled) adapter.disable() else adapter.enable()
-        }.getOrDefault(false)
-        if (!ok) {
-            toast(getString(R.string.dock_toggle_failed))
-        }
-        handler.postDelayed({ updateConnectivityStatus() }, 1_200L)
-    }
-
-    private fun requestBluetoothPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        requestPermissions(
-            arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-            REQUEST_BLUETOOTH_PERMISSION
-        )
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_BLUETOOTH_PERMISSION) {
-            updateConnectivityStatus()
-        }
-    }
-
     private fun updateDockMediaIcon() {
         val icon = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
         val description = getString(if (isPlaying) R.string.media_pause else R.string.media_play)
@@ -576,10 +723,9 @@ class MainActivity : AppCompatActivity() {
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).roundToInt()
 
+    private fun dp(value: Float): Int =
+        (value * resources.displayMetrics.density).roundToInt()
+
     private fun dpFloat(value: Float): Float =
         value * resources.displayMetrics.density
-
-    private companion object {
-        const val REQUEST_BLUETOOTH_PERMISSION = 1001
-    }
 }
