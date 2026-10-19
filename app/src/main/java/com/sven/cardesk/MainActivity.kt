@@ -25,7 +25,6 @@ import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -498,7 +497,7 @@ class MainActivity : AppCompatActivity() {
         val heightPx = dock.root.height.takeIf { it > 0 } ?: dp(preferences.bottomBarHeightDp)
         val heightScale = heightPx / dpFloat(84f)
         val widthScale = resources.displayMetrics.widthPixels / dpFloat(900f)
-        val scale = min(heightScale, widthScale).coerceIn(0.62f, 1.4f)
+        val scale = min(heightScale, widthScale).coerceIn(0.42f, 1.4f)
 
         resizeView(dock.dockMenu, 44, 44, scale)
         resizeView(dock.dockSettings, 44, 44, scale)
@@ -523,7 +522,7 @@ class MainActivity : AppCompatActivity() {
         setTextSize(dock.dockWeatherTemp, 13f, scale)
         setTextSize(dock.dockWeatherDesc, 9f, scale)
         setTextSize(dock.dockDate, 10f, scale)
-        setTextSize(dock.dockClock, 20f, scale)
+        setTextSize(dock.dockClock, 26f, scale)
 
         val horizontalPadding = dp(6f * scale)
         dock.dockBar.setPadding(horizontalPadding, 0, horizontalPadding, 0)
@@ -539,7 +538,7 @@ class MainActivity : AppCompatActivity() {
         params.width = dp(widthDp * scale)
         params.height = dp(heightDp * scale)
         view.layoutParams = params
-        if (view is ImageButton) {
+        if (view is ImageView) {
             val padding = params.width / 4
             view.setPadding(padding, padding, padding, padding)
         }
@@ -823,7 +822,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyToggleState(
-        button: ImageButton,
+        button: ImageView,
         enabled: Boolean,
         activeBackground: Int,
         descriptionRes: Int

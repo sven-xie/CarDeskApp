@@ -111,8 +111,8 @@ class DesktopPreferences(context: Context) {
         private const val DEFAULT_RATIO = 1f / 3f
         const val MIN_RATIO = 0.2f
         const val MAX_RATIO = 0.8f
-        const val MIN_BOTTOM_BAR_HEIGHT = 72
-        const val MAX_BOTTOM_BAR_HEIGHT = 160
-        const val DEFAULT_BOTTOM_BAR_HEIGHT = 104
+        const val MIN_BOTTOM_BAR_HEIGHT = 50
+        const val MAX_BOTTOM_BAR_HEIGHT = 100
+        const val DEFAULT_BOTTOM_BAR_HEIGHT = 75
     }
 }
