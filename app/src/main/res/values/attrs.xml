@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CylinderGaugeView">
+        <attr name="gaugeLabel" format="string" />
+        <attr name="gaugeColor" format="color" />
+    </declare-styleable>
+</resources>

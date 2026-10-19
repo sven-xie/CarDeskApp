@@ -42,7 +42,15 @@ dependencies {
     implementation(libs.com.google.android.material)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.gson)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+}
+
+configurations.configureEach {
+    resolutionStrategy.force("com.squareup.okhttp3:okhttp:3.12.13")
 }

@@ -13,5 +13,8 @@
         <permission name="android.permission.DEVICE_POWER" />
         <!-- Closing a CarDesk window stops the app before releasing its display. -->
         <permission name="android.permission.FORCE_STOP_PACKAGES" />
+        <!-- Bottom bar connectivity toggles. -->
+        <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
+        <permission name="android.permission.NETWORK_SETTINGS" />
     </privapp-permissions>
 </permissions>

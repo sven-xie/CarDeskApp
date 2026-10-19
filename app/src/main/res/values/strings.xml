@@ -8,6 +8,21 @@
     <string name="date_placeholder">10月17日 星期六</string>
     <string name="weather_now">晴 / 31°C</string>
     <string name="weather_city">福建 · 石狮市</string>
+    <string name="weather_city_short">石狮</string>
+    <string name="weather_loading">天气加载中</string>
+    <string name="weather_unavailable">天气 --</string>
+    <string name="weather_temperature">%1$d°C</string>
+    <string name="weather_description_city">%1$s · %2$s</string>
+    <string name="weather_clear">晴</string>
+    <string name="weather_partly_cloudy">多云</string>
+    <string name="weather_cloudy">阴</string>
+    <string name="weather_fog">雾</string>
+    <string name="weather_drizzle">毛毛雨</string>
+    <string name="weather_rain">雨</string>
+    <string name="weather_snow">雪</string>
+    <string name="weather_showers">阵雨</string>
+    <string name="weather_thunder">雷雨</string>
+    <string name="weather_unknown">未知</string>
 
     <string name="driving_distance_to_turn">距离:100米</string>
     <string name="driving_turn_left">左转</string>
@@ -65,6 +80,9 @@
     <string name="dock_clock">15:22</string>
     <string name="dock_date">周六 10月17日</string>
     <string name="dock_weather">晴 / 31°C</string>
+    <string name="dock_cpu">CPU</string>
+    <string name="dock_mem">MEM</string>
+    <string name="dock_temp">TEMP</string>
 
     <string name="apps_title">应用</string>
     <string name="apps_title_window">应用 · 窗口 %1$d</string>

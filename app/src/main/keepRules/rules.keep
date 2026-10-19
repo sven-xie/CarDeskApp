@@ -4,6 +4,11 @@
 # For more details, see
 #   https://d.android.com/r/tools/r8/keep-rules
 
+# Retrofit / Gson response models
+-keep class com.sven.cardesk.core.weather.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:

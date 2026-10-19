@@ -24,7 +24,6 @@ class PerformanceMonitor(context: Context) {
 
     data class Snapshot(
         val cpuPercent: Int?,
-        val gpuPercent: Int?,
         val memoryPercent: Int?,
         val temperatureC: Float?
     )
@@ -47,7 +46,6 @@ class PerformanceMonitor(context: Context) {
     fun sample(): Snapshot {
         return Snapshot(
             cpuPercent = readCpu(),
-            gpuPercent = readGpu(),
             memoryPercent = readMemory(),
             temperatureC = readTemperature()
         )
@@ -152,41 +150,11 @@ class PerformanceMonitor(context: Context) {
             .coerceIn(0, 100)
     }
 
-    private fun readGpu(): Int? {
-        val paths = listOf(
-            "/sys/class/kgsl/kgsl-3d0/gpubusy",
-            "/sys/class/kgsl/kgsl-3d0/gpu_busy",
-            "/sys/class/devfreq/gpu/load",
-            "/sys/kernel/gpu/gpu_busy",
-            "/sys/class/misc/mali0/device/utilisation",
-            "/sys/module/ged/parameters/gpu_loading"
-        )
-        for (path in paths) {
-            val text = runCatching { File(path).readText().trim() }.getOrNull()
-                ?.takeIf { it.isNotEmpty() } ?: continue
-            val numbers = Regex("\\d+").findAll(text).map { it.value.toInt() }.toList()
-            if (numbers.isEmpty()) continue
-
-            if (path.endsWith("gpubusy") && numbers.size >= 2 && numbers[1] > 0) {
-                return (numbers[0] * 100 / numbers[1]).coerceIn(0, 100)
-            }
-            val value = numbers[0]
-            when {
-                value in 0..100 -> return value
-                value in 101..1000 -> return (value / 10).coerceIn(0, 100)
-                value > 1000 -> return (value / 1000).coerceIn(0, 100)
-            }
-        }
-        return null
-    }
-
     private fun readTemperature(): Float? {
         val manager = hardwareProperties
         if (manager != null) {
             val types = intArrayOf(
-                HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU,
-                HardwarePropertiesManager.DEVICE_TEMPERATURE_GPU,
-                HardwarePropertiesManager.DEVICE_TEMPERATURE_BATTERY
+                HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU
             )
             var max: Float? = null
             for (type in types) {

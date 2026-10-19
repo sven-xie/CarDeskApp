@@ -1,14 +1,18 @@
 package com.sven.cardesk
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.bluetooth.BluetoothManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.media.AudioManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -38,12 +42,17 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sven.cardesk.core.background.DesktopBackgroundController
 import com.sven.cardesk.core.system.PerformanceMonitor
+import com.sven.cardesk.core.weather.WeatherInfo
+import com.sven.cardesk.core.weather.WeatherRepository
 import com.sven.cardesk.data.AppAdapter
 import com.sven.cardesk.data.AppInfo
 import com.sven.cardesk.data.AppRepository
 import com.sven.cardesk.data.DesktopPreferences
 import com.sven.cardesk.databinding.ActivityMainBinding
 import com.sven.cardesk.databinding.WindowAppBinding
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -68,6 +77,8 @@ class MainActivity : AppCompatActivity() {
     private var isPlaying = true
     private var isDockVisible = true
     private var dockAnimator: ValueAnimator? = null
+    private var weatherJob: Job? = null
+    private var lastWeather: WeatherInfo? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private val clockFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -87,7 +98,6 @@ class MainActivity : AppCompatActivity() {
             updateClockAndDate()
             updatePerformance()
             updateConnectivityStatus()
-            updateVolume()
             handler.postDelayed(this, 2_000L)
         }
     }
@@ -122,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         applyBottomBarHeight()
         updateClockAndDate()
         updateDockMediaIcon()
-        updateVolume()
+        requestBluetoothPermission()
         binding.dock.root.post {
             applyDockScale()
             updateDockTogglePosition()
@@ -136,7 +146,9 @@ class MainActivity : AppCompatActivity() {
         applyBottomBarHeight()
         updateDockMediaIcon()
         updateClockAndDate()
-        updateVolume()
+        updateConnectivityStatus()
+        updatePerformance()
+        startWeatherUpdates()
         handler.removeCallbacks(statusRunnable)
         handler.post(statusRunnable)
         binding.dock.root.post { applyDockScale() }
@@ -144,12 +156,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        weatherJob?.cancel()
+        weatherJob = null
         handler.removeCallbacks(statusRunnable)
         backgroundController.release()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        weatherJob?.cancel()
         dockAnimator?.cancel()
         handler.removeCallbacksAndMessages(null)
         backgroundController.release()
@@ -161,6 +176,17 @@ class MainActivity : AppCompatActivity() {
             applyBottomBarHeight()
             applyDockScale()
             updateDockTogglePosition()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_BLUETOOTH) {
+            updateConnectivityStatus()
         }
     }
 
@@ -347,11 +373,18 @@ class MainActivity : AppCompatActivity() {
         }
         binding.dock.dockVolumeDown.setOnClickListener { adjustVolume(-1) }
         binding.dock.dockVolumeUp.setOnClickListener { adjustVolume(1) }
-        binding.dock.dockBluetooth.setOnClickListener { openBluetoothSettings() }
-        binding.dock.dockWifi.setOnClickListener { openWifiSettings() }
+        binding.dock.dockBluetooth.setOnClickListener { toggleBluetooth() }
+        binding.dock.dockBluetooth.setOnLongClickListener {
+            openBluetoothSettings()
+            true
+        }
+        binding.dock.dockWifi.setOnClickListener { toggleWifi() }
+        binding.dock.dockWifi.setOnLongClickListener {
+            openWifiSettings()
+            true
+        }
         binding.dockToggle.setOnClickListener { toggleDock() }
         updateDockMediaIcon()
-        updateVolume()
     }
 
     private fun toggleDock() {
@@ -463,50 +496,36 @@ class MainActivity : AppCompatActivity() {
     private fun applyDockScale() {
         val dock = binding.dock
         val heightPx = dock.root.height.takeIf { it > 0 } ?: dp(preferences.bottomBarHeightDp)
-        val heightScale = heightPx / dpFloat(104f)
-        val widthScale = resources.displayMetrics.widthPixels / 1280f
-        val scale = min(heightScale, widthScale * 1.15f).coerceIn(0.62f, 1.6f)
+        val heightScale = heightPx / dpFloat(84f)
+        val widthScale = resources.displayMetrics.widthPixels / dpFloat(900f)
+        val scale = min(heightScale, widthScale).coerceIn(0.62f, 1.4f)
 
-        resizeView(dock.dockMenu, 44, 44, scale, 10f)
-        resizeView(dock.dockSettings, 44, 44, scale, 10f)
-        resizeView(dock.dockAlbumArt, 44, 44, scale, 0f)
-        resizeView(dock.dockPrevious, 30, 30, scale, 0f)
-        resizeView(dock.dockPlayPause, 30, 30, scale, 0f)
-        resizeView(dock.dockNext, 30, 30, scale, 0f)
-        resizeView(dock.dockVolumeDown, 30, 30, scale, 6f)
-        resizeView(dock.dockVolumeUp, 30, 30, scale, 6f)
-        resizeView(dock.dockBluetooth, 38, 38, scale, 9f)
-        resizeView(dock.dockWifi, 38, 38, scale, 9f)
+        resizeView(dock.dockMenu, 44, 44, scale)
+        resizeView(dock.dockSettings, 44, 44, scale)
+        resizeView(dock.dockWeatherIconBg, 38, 38, scale)
+        resizeView(dock.dockAlbumArt, 40, 40, scale)
+        resizeView(dock.dockPrevious, 30, 30, scale)
+        resizeView(dock.dockPlayPause, 30, 30, scale)
+        resizeView(dock.dockNext, 30, 30, scale)
+        resizeView(dock.dockVolumeDown, 40, 40, scale)
+        resizeView(dock.dockVolumeUp, 40, 40, scale)
+        resizeView(dock.dockBluetooth, 40, 40, scale)
+        resizeView(dock.dockWifi, 40, 40, scale)
+        resizeView(dock.cpuGauge, 58, 44, scale)
+        resizeView(dock.memGauge, 58, 44, scale)
+        resizeView(dock.tempGauge, 58, 44, scale)
 
-        (dock.dockAlbumArt.getChildAt(0) as? ImageView)?.let { icon ->
-            val params = icon.layoutParams ?: return@let
-            params.width = dp(20f * scale)
-            params.height = dp(20f * scale)
-            icon.layoutParams = params
-        }
+        resizeIcon(dock.dockWeatherIcon, 19f, scale)
+        (dock.dockAlbumArt.getChildAt(0) as? ImageView)?.let { resizeIcon(it, 20f, scale) }
 
         setTextSize(dock.dockMediaTitle, 13f, scale)
         setTextSize(dock.dockMediaArtist, 10f, scale)
-        setTextSize(dock.dockCpu, 11f, scale)
-        setTextSize(dock.dockGpu, 11f, scale)
-        setTextSize(dock.dockMem, 11f, scale)
-        setTextSize(dock.dockTemp, 11f, scale)
-        setTextSize(dock.dockBtStatus, 9f, scale)
-        setTextSize(dock.dockWifiStatus, 9f, scale)
+        setTextSize(dock.dockWeatherTemp, 13f, scale)
+        setTextSize(dock.dockWeatherDesc, 9f, scale)
         setTextSize(dock.dockDate, 10f, scale)
         setTextSize(dock.dockClock, 20f, scale)
-        setTextSize(dock.dockVolume, 11f, scale)
 
-        val statusWidth = dp((72f * scale).coerceAtLeast(56f))
-        listOf(dock.dockBtStatus, dock.dockWifiStatus).forEach { status ->
-            status.layoutParams = status.layoutParams.apply { width = statusWidth }
-        }
-        val performanceMinWidth = dp((68f * scale).coerceAtLeast(52f))
-        listOf(dock.dockCpu, dock.dockGpu, dock.dockMem, dock.dockTemp).forEach { value ->
-            value.minWidth = performanceMinWidth
-        }
-
-        val horizontalPadding = dp(8f * scale)
+        val horizontalPadding = dp(6f * scale)
         dock.dockBar.setPadding(horizontalPadding, 0, horizontalPadding, 0)
     }
 
@@ -514,17 +533,23 @@ class MainActivity : AppCompatActivity() {
         view: View,
         widthDp: Int,
         heightDp: Int,
-        scale: Float,
-        paddingDp: Float
+        scale: Float
     ) {
         val params = view.layoutParams ?: return
         params.width = dp(widthDp * scale)
         params.height = dp(heightDp * scale)
         view.layoutParams = params
-        if (paddingDp > 0f && view is ImageButton) {
-            val padding = dp(paddingDp * scale)
+        if (view is ImageButton) {
+            val padding = params.width / 4
             view.setPadding(padding, padding, padding, padding)
         }
+    }
+
+    private fun resizeIcon(view: View, baseDp: Float, scale: Float) {
+        val params = view.layoutParams ?: return
+        params.width = dp(baseDp * scale)
+        params.height = dp(baseDp * scale)
+        view.layoutParams = params
     }
 
     private fun setTextSize(view: TextView, baseSp: Float, scale: Float) {
@@ -538,18 +563,111 @@ class MainActivity : AppCompatActivity() {
             if (direction > 0) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
             AudioManager.FLAG_SHOW_UI
         )
-        updateVolume()
     }
 
-    private fun updateVolume() {
-        val manager = audioManager ?: return
-        val maxVolume = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        val currentVolume = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        binding.dock.dockVolume.text = if (maxVolume > 0) {
-            "${currentVolume * 100 / maxVolume}%"
-        } else {
-            "--"
+    private fun requestBluetoothPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_BLUETOOTH)
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    @Suppress("DEPRECATION")
+    private fun toggleBluetooth() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            toast(getString(R.string.dock_bt_unavailable))
+            openBluetoothSettings()
+            return
+        }
+        val adapter = runCatching { bluetoothManager?.adapter }.getOrNull()
+        if (adapter == null) {
+            toast(getString(R.string.dock_bt_unavailable))
+            return
+        }
+        val enable = runCatching { !adapter.isEnabled }.getOrDefault(true)
+        val changed = runCatching {
+            if (enable) adapter.enable() else adapter.disable()
+        }.getOrDefault(false)
+        if (!changed) {
+            toast(getString(R.string.dock_toggle_failed))
+            openBluetoothSettings()
+        } else {
+            handler.postDelayed({ updateConnectivityStatus() }, 500L)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun toggleWifi() {
+        val wifi = wifiManager
+        if (wifi == null) {
+            toast(getString(R.string.dock_wifi_unavailable))
+            return
+        }
+        val enable = runCatching { !wifi.isWifiEnabled }.getOrDefault(true)
+        val changed = runCatching { wifi.setWifiEnabled(enable) }.getOrDefault(false)
+        if (!changed) {
+            toast(getString(R.string.dock_toggle_failed))
+            openWifiSettings()
+        } else {
+            handler.postDelayed({ updateConnectivityStatus() }, 500L)
+        }
+    }
+
+    private fun startWeatherUpdates() {
+        weatherJob?.cancel()
+        weatherJob = lifecycleScope.launch {
+            while (isActive) {
+                val weather = WeatherRepository.fetchCurrent(this@MainActivity)
+                if (weather != null) {
+                    lastWeather = weather
+                    updateWeatherUi(weather)
+                } else if (lastWeather == null) {
+                    binding.dock.dockWeatherTemp.text = getString(R.string.weather_unavailable)
+                    binding.dock.dockWeatherDesc.text = getString(R.string.weather_unavailable)
+                }
+                delay(if (lastWeather == null) 60_000L else WEATHER_REFRESH_MS)
+            }
+        }
+    }
+
+    private fun updateWeatherUi(weather: WeatherInfo) {
+        val isSunny = weather.iconRes == R.drawable.ic_sun
+        binding.dock.dockWeatherTemp.text =
+            getString(R.string.weather_temperature, weather.temperatureC)
+        binding.dock.dockWeatherDesc.text = getString(
+            R.string.weather_description_city,
+            weather.description,
+            getString(R.string.weather_city_short)
+        )
+        binding.dock.dockWeatherIcon.setImageResource(weather.iconRes)
+        binding.dock.dockWeatherIcon.imageTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(this, if (isSunny) R.color.black else R.color.white)
+        )
+        val background = when (weather.iconRes) {
+            R.drawable.ic_sun -> R.color.accent_yellow
+            R.drawable.ic_weather_thunder -> R.color.accent_purple
+            R.drawable.ic_weather_rain -> R.color.accent_blue
+            R.drawable.ic_weather_snow -> R.color.accent_cyan
+            else -> R.color.accent_gray
+        }
+        binding.dock.dockWeatherIconBg.backgroundTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(this, background)
+        )
+        binding.dock.dockWeatherIcon.contentDescription = getString(
+            R.string.weather_description_city,
+            getString(R.string.weather_temperature, weather.temperatureC),
+            weather.description
+        )
     }
 
     private fun openWifiSettings() {
@@ -665,31 +783,64 @@ class MainActivity : AppCompatActivity() {
 
     private fun updatePerformance() {
         val snapshot = performanceMonitor.sample()
-        binding.dock.dockCpu.text =
-            "CPU " + (snapshot.cpuPercent?.let { "$it%" } ?: "--")
-        binding.dock.dockGpu.text =
-            "GPU " + (snapshot.gpuPercent?.let { "$it%" } ?: "--")
-        binding.dock.dockMem.text =
-            "MEM " + (snapshot.memoryPercent?.let { "$it%" } ?: "--")
-        binding.dock.dockTemp.text =
-            snapshot.temperatureC?.let { "${it.roundToInt()}°C" } ?: "--°C"
+        val cpu = snapshot.cpuPercent
+        binding.dock.cpuGauge.setValue(cpu ?: 0, cpu?.let { "$it%" } ?: "--")
+        val memory = snapshot.memoryPercent
+        binding.dock.memGauge.setValue(memory ?: 0, memory?.let { "$it%" } ?: "--")
+        val temperature = snapshot.temperatureC?.roundToInt()?.coerceIn(0, 100)
+        binding.dock.tempGauge.setValue(
+            temperature ?: 0,
+            temperature?.let { "$it°C" } ?: "--°C"
+        )
     }
 
     private fun updateConnectivityStatus() {
         val wifi = wifiManager
-        binding.dock.dockWifiStatus.text = when {
-            wifi == null -> getString(R.string.dock_wifi_unavailable)
-            !wifi.isWifiEnabled -> getString(R.string.dock_wifi_off)
-            else -> getString(R.string.dock_wifi_on)
-        }
+        val wifiEnabled = runCatching { wifi?.isWifiEnabled == true }.getOrDefault(false)
+        applyToggleState(
+            binding.dock.dockWifi,
+            wifiEnabled,
+            R.color.accent_blue,
+            if (wifi == null) R.string.dock_wifi_unavailable else if (wifiEnabled) {
+                R.string.dock_wifi_on
+            } else {
+                R.string.dock_wifi_off
+            }
+        )
 
         val adapter = runCatching { bluetoothManager?.adapter }.getOrNull()
-        val enabled = runCatching { adapter?.isEnabled == true }.getOrDefault(false)
-        binding.dock.dockBtStatus.text = when {
-            adapter == null -> getString(R.string.dock_bt_unavailable)
-            enabled -> getString(R.string.dock_bt_on)
-            else -> getString(R.string.dock_bt_off)
-        }
+        val bluetoothEnabled = runCatching { adapter?.isEnabled == true }.getOrDefault(false)
+        applyToggleState(
+            binding.dock.dockBluetooth,
+            bluetoothEnabled,
+            R.color.accent_blue,
+            if (adapter == null) R.string.dock_bt_unavailable else if (bluetoothEnabled) {
+                R.string.dock_bt_on
+            } else {
+                R.string.dock_bt_off
+            }
+        )
+    }
+
+    private fun applyToggleState(
+        button: ImageButton,
+        enabled: Boolean,
+        activeBackground: Int,
+        descriptionRes: Int
+    ) {
+        button.backgroundTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(
+                this,
+                if (enabled) activeBackground else R.color.card_surface_alt
+            )
+        )
+        button.imageTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(
+                this,
+                if (enabled) R.color.white else R.color.text_tertiary
+            )
+        )
+        button.contentDescription = getString(descriptionRes)
     }
 
     private fun updateDockMediaIcon() {
@@ -728,4 +879,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun dpFloat(value: Float): Float =
         value * resources.displayMetrics.density
+
+    private companion object {
+        const val REQUEST_BLUETOOTH = 1001
+        const val WEATHER_REFRESH_MS = 10 * 60 * 1000L
+    }
 }
