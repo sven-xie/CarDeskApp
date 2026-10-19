@@ -21,8 +21,8 @@
 
         <LinearLayout
             android:id="@+id/windowDragHandle"
-            android:layout_width="52dp"
-            android:layout_height="30dp"
+            android:layout_width="40dp"
+            android:layout_height="10dp"
             android:layout_gravity="top|center_horizontal"
             android:layout_marginTop="6dp"
             android:background="@drawable/bg_window_handle"
@@ -34,20 +34,20 @@
             android:orientation="horizontal">
 
             <View
-                android:layout_width="5dp"
-                android:layout_height="5dp"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
                 android:layout_margin="2dp"
                 android:background="@drawable/bg_drag_dot_light" />
 
             <View
-                android:layout_width="5dp"
-                android:layout_height="5dp"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
                 android:layout_margin="2dp"
                 android:background="@drawable/bg_drag_dot_light" />
 
             <View
-                android:layout_width="5dp"
-                android:layout_height="5dp"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
                 android:layout_margin="2dp"
                 android:background="@drawable/bg_drag_dot_light" />
         </LinearLayout>
