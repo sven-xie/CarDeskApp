@@ -63,6 +63,8 @@
     <string name="map_road_name_secondary">吕岭路</string>
 
     <string name="dock_settings">设置</string>
+    <string name="dock_logo">MyCarDesk</string>
+    <string name="dock_hide">隐藏操作栏</string>
     <string name="dock_menu">应用列表</string>
     <string name="dock_collapse">收起操作栏</string>
     <string name="dock_expand">展开操作栏</string>

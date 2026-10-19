@@ -57,6 +57,8 @@ import com.sven.cardesk.databinding.DockModulePerformanceBinding
 import com.sven.cardesk.databinding.DockModuleWeatherBinding
 import com.sven.cardesk.databinding.WindowAppBinding
 import com.sven.cardesk.utils.DisplayUtils
+import com.sven.cardesk.widget.WindowAction
+import com.sven.cardesk.widget.WindowActionPopup
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -145,10 +147,7 @@ class MainActivity : AppCompatActivity() {
         updateClockAndDate()
         updateDockMediaIcon()
         requestRuntimePermissions()
-        binding.dock.root.post {
-            applyDockScale()
-            updateDockTogglePosition()
-        }
+        binding.dock.root.post { applyDockScale() }
     }
 
     override fun onResume() {
@@ -188,7 +187,6 @@ class MainActivity : AppCompatActivity() {
         binding.dock.root.post {
             applyBottomBarHeight()
             applyDockScale()
-            updateDockTogglePosition()
         }
     }
 
@@ -237,15 +235,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showWindowMenu(index: Int) {
+        val window = windowBindings[index]
         val isFullscreen = fullscreenWindowIndex == index
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.window_menu_title)
-            .setPositiveButton(
-                if (isFullscreen) R.string.window_exit_fullscreen else R.string.window_fullscreen
-            ) { _, _ -> toggleFullscreen(index) }
-            .setNegativeButton(R.string.window_close) { _, _ -> clearWindow(index) }
-            .setNeutralButton(R.string.window_cancel, null)
-            .show()
+        val actions = listOf(
+            WindowAction(
+                label = getString(
+                    if (isFullscreen) R.string.window_exit_fullscreen
+                    else R.string.window_fullscreen
+                ),
+                iconRes = R.drawable.ic_fullscreen,
+                iconColorRes = R.color.accent_cyan
+            ) { toggleFullscreen(index) },
+            WindowAction(
+                label = getString(R.string.window_choose_app),
+                iconRes = R.drawable.ic_apps,
+                iconColorRes = R.color.accent_purple
+            ) { openAppDrawerForWindow(index) },
+            WindowAction(
+                label = getString(R.string.window_close),
+                iconRes = R.drawable.ic_close,
+                iconColorRes = R.color.accent_red
+            ) { clearWindow(index) }
+        )
+        WindowActionPopup(
+            context = this,
+            anchor = window.windowDragHandle,
+            windowWidthPx = window.root.width,
+            actions = actions
+        ).show()
     }
 
     private fun toggleFullscreen(index: Int) {
@@ -523,14 +540,17 @@ class MainActivity : AppCompatActivity() {
             openWifiSettings()
             true
         }
-        binding.dockToggle.setOnClickListener { toggleDock() }
+        dockBindings.actions.dockLogo.setOnClickListener { openAppDrawerForNextWindow() }
+        dockBindings.actions.dockHide.setOnClickListener { toggleDock() }
+        binding.dockToggle.setOnClickListener {
+            if (!isDockVisible) toggleDock()
+        }
         updateDockMediaIcon()
     }
 
     private fun toggleDock() {
         dockAnimator?.cancel()
         val root = binding.dock.root
-        val toggle = binding.dockToggle
         val targetHeight = dp(preferences.bottomBarHeightDp)
         val fromVisible = isDockVisible
         val startHeight = if (fromVisible) {
@@ -539,28 +559,17 @@ class MainActivity : AppCompatActivity() {
             0
         }
         val rootParams = root.layoutParams as? LinearLayout.LayoutParams ?: return
-        val toggleParams = toggle.layoutParams as? FrameLayout.LayoutParams ?: return
-
-        val toggleHeight = toggle.height.takeIf { it > 0 } ?: dp(32)
-        val startMargin = toggleParams.bottomMargin
-        val endMargin = if (fromVisible) {
-            dp(6)
-        } else {
-            (targetHeight - toggleHeight).coerceAtLeast(0)
-        }
-        val startRotation = toggle.rotation
-        val endRotation = if (fromVisible) 180f else 0f
 
         beginWindowResizeTransition()
         if (!fromVisible) {
             setCardRowBottomGap(0)
+            binding.dockToggle.visibility = View.GONE
             isDockVisible = true
             root.visibility = View.VISIBLE
             rootParams.height = 0
             root.layoutParams = rootParams
             root.alpha = 0f
             root.translationY = targetHeight.toFloat()
-            toggle.rotation = 180f
         }
 
         dockAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -581,10 +590,6 @@ class MainActivity : AppCompatActivity() {
                     targetHeight * (1f - fraction)
                 }
                 root.alpha = if (fromVisible) 1f - fraction else fraction
-                toggleParams.bottomMargin =
-                    (startMargin + (endMargin - startMargin) * fraction).roundToInt()
-                toggle.layoutParams = toggleParams
-                toggle.rotation = startRotation + (endRotation - startRotation) * fraction
                 updateDockDividerHeights(rootParams.height)
             }
             addListener(object : AnimatorListenerAdapter() {
@@ -596,20 +601,20 @@ class MainActivity : AppCompatActivity() {
                         rootParams.height = 0
                         root.layoutParams = rootParams
                         isDockVisible = false
-                        toggle.contentDescription = getString(R.string.dock_expand)
-                        setCardRowBottomGap(42)
+                        setCardRowBottomGap(24)
+                        binding.dockToggle.alpha = 0.85f
+                        binding.dockToggle.visibility = View.VISIBLE
                     } else {
+                        binding.dockToggle.visibility = View.GONE
                         root.visibility = View.VISIBLE
                         root.alpha = 1f
                         root.translationY = 0f
                         rootParams.height = targetHeight
                         root.layoutParams = rootParams
                         isDockVisible = true
-                        toggle.contentDescription = getString(R.string.dock_collapse)
                         setCardRowBottomGap(0)
                     }
                     dockAnimator = null
-                    updateDockTogglePosition()
                     applyDockScale()
                     finishWindowResizeTransition()
                 }
@@ -622,28 +627,19 @@ class MainActivity : AppCompatActivity() {
         val targetHeight = dp(preferences.bottomBarHeightDp)
         if (isDockVisible && dockAnimator?.isRunning != true) {
             val root = binding.dock.root
-            val params = root.layoutParams as? LinearLayout.LayoutParams ?: return
+            val params = root.layoutParams as? LinearLayout.LayoutParams
+                ?: LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    targetHeight
+                )
             params.width = ViewGroup.LayoutParams.MATCH_PARENT
             params.height = targetHeight
             root.layoutParams = params
             root.requestLayout()
             updateDockDividerHeights(targetHeight)
+            applyDockScale()
         }
-        updateDockTogglePosition()
         binding.dock.root.post { applyDockScale() }
-    }
-
-    private fun updateDockTogglePosition() {
-        if (dockAnimator?.isRunning == true) return
-        val params = binding.dockToggle.layoutParams as? FrameLayout.LayoutParams ?: return
-        val targetHeight = dp(preferences.bottomBarHeightDp)
-        val toggleHeight = binding.dockToggle.height.takeIf { it > 0 } ?: dp(32)
-        params.bottomMargin = if (isDockVisible) {
-            (targetHeight - toggleHeight).coerceAtLeast(0)
-        } else {
-            dp(6)
-        }
-        binding.dockToggle.layoutParams = params
     }
 
     private fun setCardRowBottomGap(gapDp: Int) {
@@ -658,14 +654,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyDockScale() {
         val dock = binding.dock
-        val heightPx = dock.root.height.takeIf { it > 0 } ?: dp(preferences.bottomBarHeightDp)
-        val heightScale = heightPx / dpFloat(84f)
-        val widthScale = resources.displayMetrics.widthPixels / dpFloat(900f)
-        val scale = min(heightScale, widthScale).coerceIn(0.42f, 1.4f)
+        val heightPx = dp(preferences.bottomBarHeightDp)
+        val scale = (heightPx / dpFloat(84f)).coerceIn(0.4f, 2.0f)
         updateDockDividerHeights(heightPx)
 
+        resizeView(dockBindings.actions.dockLogo, 44, 44, scale)
         resizeView(dockBindings.actions.dockMenu, 44, 44, scale)
         resizeView(dockBindings.actions.dockSettings, 44, 44, scale)
+        resizeView(dockBindings.actions.dockHide, 44, 44, scale)
         resizeView(dockBindings.weather.dockWeatherIconBg, 38, 38, scale)
         resizeView(dockBindings.media.dockAlbumArt, 40, 40, scale)
         resizeView(dockBindings.media.dockPrevious, 30, 30, scale)
@@ -680,7 +676,13 @@ class MainActivity : AppCompatActivity() {
         resizeView(dockBindings.performance.tempGauge, 58, 44, scale)
 
         resizeIcon(dockBindings.weather.dockWeatherIcon, 19f, scale)
-        (dockBindings.media.dockAlbumArt.getChildAt(0) as? ImageView)?.let { resizeIcon(it, 20f, scale) }
+        (dockBindings.media.dockAlbumArt.getChildAt(0) as? ImageView)?.let {
+            resizeIcon(
+                it,
+                20f,
+                scale
+            )
+        }
 
         setTextSize(dockBindings.media.dockMediaTitle, 13f, scale)
         setTextSize(dockBindings.media.dockMediaArtist, 10f, scale)
@@ -704,8 +706,11 @@ class MainActivity : AppCompatActivity() {
         params.height = dp(heightDp * scale)
         view.layoutParams = params
         if (view is ImageView) {
-            val padding = params.width / 4
-            view.setPadding(padding, padding, padding, padding)
+            val iconSize = min(params.width, params.height) / 2
+            val paddingX = (params.width - iconSize) / 2
+            val paddingY = (params.height - iconSize) / 2
+            view.setPadding(paddingX, paddingY, paddingX, paddingY)
+            view.scaleType = ImageView.ScaleType.FIT_CENTER
         }
     }
 

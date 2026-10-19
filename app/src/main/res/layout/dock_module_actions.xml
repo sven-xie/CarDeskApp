@@ -7,7 +7,18 @@
     android:orientation="horizontal">
 
     <ImageButton
+        android:id="@+id/dockLogo"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_quick_button"
+        android:backgroundTint="@color/accent_cyan"
+        android:contentDescription="@string/dock_logo"
+        android:padding="11dp"
+        android:src="@mipmap/ic_launcher_round" />
+
+    <ImageButton
         android:id="@+id/dockMenu"
+        android:layout_marginStart="6dp"
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:background="@drawable/bg_quick_button"
@@ -27,5 +38,17 @@
         android:contentDescription="@string/dock_settings"
         android:padding="11dp"
         android:src="@drawable/ic_settings"
+        app:tint="@color/white" />
+
+    <ImageButton
+        android:id="@+id/dockHide"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_quick_button"
+        android:backgroundTint="@color/accent_gray"
+        android:contentDescription="@string/dock_hide"
+        android:padding="11dp"
+        android:src="@drawable/ic_chevron_down"
         app:tint="@color/white" />
 </LinearLayout>

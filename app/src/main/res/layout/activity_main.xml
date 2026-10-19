@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -91,16 +92,17 @@
 
     <ImageButton
         android:id="@+id/dockToggle"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="60dp"
+        android:layout_height="18dp"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="72dp"
-        android:alpha="0.8"
         android:background="@drawable/bg_dock_toggle"
         android:contentDescription="@string/dock_collapse"
         android:padding="8dp"
+        android:rotation="180"
         android:src="@drawable/ic_chevron_down"
-        app:tint="@color/white" />
+        android:visibility="gone"
+        app:tint="@color/white"
+        tools:visibility="visible" />
 
     <FrameLayout
         android:id="@+id/appDrawer"
