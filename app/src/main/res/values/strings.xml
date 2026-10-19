@@ -101,7 +101,11 @@
     <string name="window_empty_subtitle">点击从应用列表启动</string>
     <string name="window_choose_app">选择应用</string>
     <string name="window_close">关闭窗口</string>
-    <string name="window_drag">拖动窗口</string>
+    <string name="window_menu_title">窗口选项</string>
+    <string name="window_fullscreen">全屏</string>
+    <string name="window_exit_fullscreen">退出全屏</string>
+    <string name="window_cancel">取消</string>
+    <string name="window_drag">拖动窗口 / 点击打开选项</string>
     <string name="window_start_failed">无法启动应用</string>
     <string name="window_display_failed">副屏窗口初始化失败</string>
 

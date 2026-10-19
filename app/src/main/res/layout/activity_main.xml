@@ -41,7 +41,7 @@
             android:id="@+id/cardRow"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginHorizontal="20dp"
+            android:layout_marginHorizontal="8dp"
             android:layout_marginTop="0dp"
             android:layout_weight="1"
             android:baselineAligned="false"
@@ -58,7 +58,7 @@
 
             <com.sven.cardesk.widget.ResizeHandle
                 android:id="@+id/handleLeft"
-                android:layout_width="24dp"
+                android:layout_width="16dp"
                 android:layout_height="match_parent" />
 
             <include
@@ -70,7 +70,7 @@
 
             <com.sven.cardesk.widget.ResizeHandle
                 android:id="@+id/handleRight"
-                android:layout_width="24dp"
+                android:layout_width="16dp"
                 android:layout_height="match_parent" />
 
             <include
@@ -91,15 +91,14 @@
 
     <ImageButton
         android:id="@+id/dockToggle"
-        android:layout_width="44dp"
-        android:layout_height="18dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="100dp"
+        android:layout_marginBottom="72dp"
         android:alpha="0.8"
         android:background="@drawable/bg_dock_toggle"
         android:contentDescription="@string/dock_collapse"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="0dp"
+        android:padding="8dp"
         android:src="@drawable/ic_chevron_down"
         app:tint="@color/white" />
 

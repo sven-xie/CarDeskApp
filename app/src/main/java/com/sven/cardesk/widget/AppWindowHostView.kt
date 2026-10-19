@@ -54,6 +54,7 @@ class AppWindowHostView @JvmOverloads constructor(
     private var currentPackage: String? = null
     private var displayWidth = 0
     private var displayHeight = 0
+    private var resizeDeferred = false
 
     val currentPackageName: String?
         get() = currentPackage ?: requestedPackage
@@ -88,7 +89,7 @@ class AppWindowHostView @JvmOverloads constructor(
                 outputSurface = Surface(surfaceTexture)
                 displayWidth = width
                 displayHeight = height
-                if (requestedPackage != null) {
+                if (requestedPackage != null && !resizeDeferred) {
                     createVirtualDisplay()
                     launchRequestedApp()
                 }
@@ -100,7 +101,9 @@ class AppWindowHostView @JvmOverloads constructor(
                 height: Int
             ) {
                 surfaceTexture.setDefaultBufferSize(width, height)
-                resizeVirtualDisplay(width, height)
+                if (!resizeDeferred) {
+                    resizeVirtualDisplay(width, height)
+                }
             }
 
             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
@@ -149,11 +152,28 @@ class AppWindowHostView @JvmOverloads constructor(
         onAppChanged?.invoke(null)
     }
 
+    fun setResizeDeferred(deferred: Boolean) {
+        resizeDeferred = deferred
+        if (deferred) return
+        if (virtualDisplay == null &&
+            outputSurface != null &&
+            requestedPackage != null &&
+            width > 0 &&
+            height > 0
+        ) {
+            createVirtualDisplay()
+            launchRequestedApp()
+        } else {
+            resizeVirtualDisplay(width, height)
+        }
+    }
+
     override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
         super.onSizeChanged(width, height, oldWidth, oldHeight)
         displayWidth = width
         displayHeight = height
         content.appTexture.surfaceTexture?.setDefaultBufferSize(width, height)
+        if (resizeDeferred) return
         if (virtualDisplay == null &&
             outputSurface != null &&
             requestedPackage != null &&
@@ -175,7 +195,7 @@ class AppWindowHostView @JvmOverloads constructor(
             outputSurface = Surface(surfaceTexture)
             displayWidth = width
             displayHeight = height
-            if (requestedPackage != null) {
+            if (requestedPackage != null && !resizeDeferred) {
                 createVirtualDisplay()
                 launchRequestedApp()
             }
@@ -254,7 +274,7 @@ class AppWindowHostView @JvmOverloads constructor(
     }
 
     private fun resizeVirtualDisplay(width: Int, height: Int) {
-        if (width <= 0 || height <= 0) return
+        if (resizeDeferred || width <= 0 || height <= 0) return
         val display = virtualDisplay ?: return
         runCatching { display.resize(width, height, densityDpi) }
             .onFailure { Log.d(TAG, "Unable to resize virtual display", it) }

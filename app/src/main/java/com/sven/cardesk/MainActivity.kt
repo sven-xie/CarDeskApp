@@ -40,6 +40,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sven.cardesk.core.background.DesktopBackgroundController
+import com.sven.cardesk.core.location.LocationProvider
 import com.sven.cardesk.core.system.PerformanceMonitor
 import com.sven.cardesk.core.weather.WeatherInfo
 import com.sven.cardesk.core.weather.WeatherRepository
@@ -48,7 +49,14 @@ import com.sven.cardesk.data.AppInfo
 import com.sven.cardesk.data.AppRepository
 import com.sven.cardesk.data.DesktopPreferences
 import com.sven.cardesk.databinding.ActivityMainBinding
+import com.sven.cardesk.databinding.DockModuleActionsBinding
+import com.sven.cardesk.databinding.DockModuleClockBinding
+import com.sven.cardesk.databinding.DockModuleConnectivityBinding
+import com.sven.cardesk.databinding.DockModuleMediaBinding
+import com.sven.cardesk.databinding.DockModulePerformanceBinding
+import com.sven.cardesk.databinding.DockModuleWeatherBinding
 import com.sven.cardesk.databinding.WindowAppBinding
+import com.sven.cardesk.utils.DisplayUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -70,14 +78,18 @@ class MainActivity : AppCompatActivity() {
     private val appRepository by lazy { AppRepository(this) }
 
     private lateinit var windowBindings: List<WindowAppBinding>
+    private lateinit var dockBindings: DockBindings
+    private val dockDividers = mutableListOf<View>()
     private var targetWindowIndex = 0
     private var allApps: List<AppInfo> = emptyList()
     private var isDrawerOpen = false
     private var isPlaying = true
     private var isDockVisible = true
+    private var fullscreenWindowIndex: Int? = null
     private var dockAnimator: ValueAnimator? = null
     private var weatherJob: Job? = null
     private var lastWeather: WeatherInfo? = null
+    private var currentCoordinates = LocationProvider.defaultLocation()
 
     private val handler = Handler(Looper.getMainLooper())
     private val clockFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -125,13 +137,14 @@ class MainActivity : AppCompatActivity() {
 
         setupWindows()
         setupCardRow()
+        setupDockModules()
         setupDock()
         setupAppDrawer()
         setupBackNavigation()
         applyBottomBarHeight()
         updateClockAndDate()
         updateDockMediaIcon()
-        requestBluetoothPermission()
+        requestRuntimePermissions()
         binding.dock.root.post {
             applyDockScale()
             updateDockTogglePosition()
@@ -147,6 +160,7 @@ class MainActivity : AppCompatActivity() {
         updateClockAndDate()
         updateConnectivityStatus()
         updatePerformance()
+        requestCurrentLocation()
         startWeatherUpdates()
         handler.removeCallbacks(statusRunnable)
         handler.post(statusRunnable)
@@ -184,21 +198,20 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_BLUETOOTH) {
+        if (requestCode == REQUEST_RUNTIME_PERMISSIONS) {
             updateConnectivityStatus()
+            requestCurrentLocation()
+            startWeatherUpdates()
         }
     }
 
     private fun setupWindows() {
         windowBindings.forEachIndexed { index, window ->
-            window.windowTitle.text = getString(R.string.window_default_title, index + 1)
             window.appWindowHost.onChooseApp = { openAppDrawerForWindow(index) }
-            window.appWindowHost.onAppChanged = { label ->
-                window.windowTitle.text =
-                    label ?: getString(R.string.window_default_title, index + 1)
+            window.appWindowHost.onAppChanged = {
                 setWindowIcon(window, window.appWindowHost.currentPackageName)
             }
-            window.windowClose.setOnClickListener { clearWindow(index) }
+            window.windowDragHandle.setOnClickListener { showWindowMenu(index) }
             setupWindowDrag(index, window)
             setWindowIcon(window, null)
             preferences.windowPackage(index)
@@ -223,16 +236,64 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showWindowMenu(index: Int) {
+        val isFullscreen = fullscreenWindowIndex == index
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.window_menu_title)
+            .setPositiveButton(
+                if (isFullscreen) R.string.window_exit_fullscreen else R.string.window_fullscreen
+            ) { _, _ -> toggleFullscreen(index) }
+            .setNegativeButton(R.string.window_close) { _, _ -> clearWindow(index) }
+            .setNeutralButton(R.string.window_cancel, null)
+            .show()
+    }
+
+    private fun toggleFullscreen(index: Int) {
+        beginWindowResizeTransition()
+        if (fullscreenWindowIndex == index) {
+            fullscreenWindowIndex = null
+            windowBindings.forEach { it.root.visibility = View.VISIBLE }
+            binding.handleLeft.visibility = View.VISIBLE
+            binding.handleRight.visibility = View.VISIBLE
+            binding.cardRow.setRatios(preferences.cardRatios)
+        } else {
+            fullscreenWindowIndex = index
+            windowBindings.forEachIndexed { windowIndex, window ->
+                window.root.visibility = if (windowIndex == index) View.VISIBLE else View.GONE
+            }
+            binding.handleLeft.visibility = View.GONE
+            binding.handleRight.visibility = View.GONE
+        }
+        binding.cardRow.requestLayout()
+        finishWindowResizeTransition()
+    }
+
+    private fun beginWindowResizeTransition() {
+        windowBindings.forEach { it.appWindowHost.setResizeDeferred(true) }
+        setResizeOverlaysVisible(true)
+    }
+
+    private fun finishWindowResizeTransition() {
+        binding.cardRow.post {
+            windowBindings.forEach { it.appWindowHost.setResizeDeferred(false) }
+            setResizeOverlaysVisible(false)
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupWindowDrag(index: Int, window: WindowAppBinding) {
         val handle = window.windowDragHandle
         var startRawX = 0f
         var dragging = false
+        var moved = false
+        val touchSlop = dp(6f)
 
         handle.setOnTouchListener { view, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     startRawX = event.rawX
                     dragging = true
+                    moved = false
                     window.root.elevation = dpFloat(18f)
                     window.root.translationZ = dpFloat(18f)
                     view.parent?.requestDisallowInterceptTouchEvent(true)
@@ -243,7 +304,11 @@ class MainActivity : AppCompatActivity() {
                     if (!dragging) {
                         false
                     } else {
-                        window.root.translationX = event.rawX - startRawX
+                        val delta = event.rawX - startRawX
+                        if (abs(delta) > touchSlop) {
+                            moved = true
+                        }
+                        window.root.translationX = delta
                         true
                     }
                 }
@@ -258,16 +323,19 @@ class MainActivity : AppCompatActivity() {
                         window.root.animate().translationX(0f).setDuration(160L).start()
                         window.root.elevation = 0f
                         window.root.translationZ = 0f
-                        if (abs(delta) > dpFloat(10f)) {
+                        if (moved && abs(delta) > dpFloat(10f)) {
                             trySwapWindow(index, delta)
                         }
-                        view.performClick()
+                        if (!moved) {
+                            view.performClick()
+                        }
                         true
                     }
                 }
 
                 MotionEvent.ACTION_CANCEL -> {
                     dragging = false
+                    moved = false
                     view.parent?.requestDisallowInterceptTouchEvent(false)
                     window.root.animate().translationX(0f).setDuration(120L).start()
                     window.root.elevation = 0f
@@ -319,7 +387,6 @@ class MainActivity : AppCompatActivity() {
         val window = windowBindings[index]
         if (packageName.isNullOrBlank()) {
             window.appWindowHost.clearApp()
-            window.windowTitle.text = getString(R.string.window_default_title, index + 1)
             setWindowIcon(window, null)
         } else {
             window.appWindowHost.launchApp(packageName)
@@ -328,11 +395,85 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun clearWindow(index: Int) {
+        if (fullscreenWindowIndex == index) {
+            toggleFullscreen(index)
+        }
         val window = windowBindings[index]
         window.appWindowHost.clearApp()
         preferences.setWindowPackage(index, null)
-        window.windowTitle.text = getString(R.string.window_default_title, index + 1)
         setWindowIcon(window, null)
+    }
+
+    private data class DockBindings(
+        val weather: DockModuleWeatherBinding,
+        val actions: DockModuleActionsBinding,
+        val connectivity: DockModuleConnectivityBinding,
+        val performance: DockModulePerformanceBinding,
+        val media: DockModuleMediaBinding,
+        val clock: DockModuleClockBinding
+    )
+
+    private fun setupDockModules() {
+        val bar = binding.dock.dockBar
+        bar.removeAllViews()
+        dockDividers.clear()
+
+        val weather = DockModuleWeatherBinding.inflate(layoutInflater, bar, false)
+        val actions = DockModuleActionsBinding.inflate(layoutInflater, bar, false)
+        val connectivity = DockModuleConnectivityBinding.inflate(layoutInflater, bar, false)
+        val performance = DockModulePerformanceBinding.inflate(layoutInflater, bar, false)
+        val media = DockModuleMediaBinding.inflate(layoutInflater, bar, false)
+        val clock = DockModuleClockBinding.inflate(layoutInflater, bar, false)
+
+        addDockModule(bar, actions.root, 0f)
+        addDockDivider(bar)
+        addDockModule(bar, connectivity.root, 0f)
+        addDockDivider(bar)
+        addDockModule(bar, performance.root, 0f)
+        addDockDivider(bar)
+        addDockModule(bar, media.root, 1f)
+        addDockDivider(bar)
+        addDockModule(bar, weather.root, 0f)
+        addDockDivider(bar)
+        addDockModule(bar, clock.root, 0f)
+
+        dockBindings = DockBindings(
+            weather = weather,
+            actions = actions,
+            connectivity = connectivity,
+            performance = performance,
+            media = media,
+            clock = clock
+        )
+    }
+
+    private fun addDockModule(parent: LinearLayout, view: View, weight: Float) {
+        val params = LinearLayout.LayoutParams(
+            if (weight > 0f) 0 else ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            weight
+        )
+        parent.addView(view, params)
+    }
+
+    private fun addDockDivider(parent: LinearLayout) {
+        val divider = View(this).apply {
+            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.divider))
+        }
+        val params = LinearLayout.LayoutParams(dp(1), dp(32))
+        params.marginStart = dp(8)
+        params.marginEnd = dp(8)
+        parent.addView(divider, params)
+        dockDividers.add(divider)
+    }
+
+    private fun updateDockDividerHeights(heightPx: Int) {
+        val dividerHeight = (heightPx * 0.4f).roundToInt().coerceAtLeast(1)
+        dockDividers.forEach { divider ->
+            val params = divider.layoutParams
+            params.height = dividerHeight
+            divider.layoutParams = params
+        }
     }
 
     private fun setupCardRow() {
@@ -360,25 +501,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupDock() {
-        binding.dock.dockMenu.setOnClickListener { openAppDrawerForNextWindow() }
-        binding.dock.dockSettings.setOnClickListener {
+        dockBindings.actions.dockMenu.setOnClickListener { openAppDrawerForNextWindow() }
+        dockBindings.actions.dockSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
-        binding.dock.dockPrevious.setOnClickListener { showComingSoon() }
-        binding.dock.dockNext.setOnClickListener { showComingSoon() }
-        binding.dock.dockPlayPause.setOnClickListener {
+        dockBindings.media.dockPrevious.setOnClickListener { showComingSoon() }
+        dockBindings.media.dockNext.setOnClickListener { showComingSoon() }
+        dockBindings.media.dockPlayPause.setOnClickListener {
             isPlaying = !isPlaying
             updateDockMediaIcon()
         }
-        binding.dock.dockVolumeDown.setOnClickListener { adjustVolume(-1) }
-        binding.dock.dockVolumeUp.setOnClickListener { adjustVolume(1) }
-        binding.dock.dockBluetooth.setOnClickListener { toggleBluetooth() }
-        binding.dock.dockBluetooth.setOnLongClickListener {
+        dockBindings.connectivity.dockVolumeDown.setOnClickListener { adjustVolume(-1) }
+        dockBindings.connectivity.dockVolumeUp.setOnClickListener { adjustVolume(1) }
+        dockBindings.connectivity.dockBluetooth.setOnClickListener { toggleBluetooth() }
+        dockBindings.connectivity.dockBluetooth.setOnLongClickListener {
             openBluetoothSettings()
             true
         }
-        binding.dock.dockWifi.setOnClickListener { toggleWifi() }
-        binding.dock.dockWifi.setOnLongClickListener {
+        dockBindings.connectivity.dockWifi.setOnClickListener { toggleWifi() }
+        dockBindings.connectivity.dockWifi.setOnLongClickListener {
             openWifiSettings()
             true
         }
@@ -400,12 +541,19 @@ class MainActivity : AppCompatActivity() {
         val rootParams = root.layoutParams as? LinearLayout.LayoutParams ?: return
         val toggleParams = toggle.layoutParams as? FrameLayout.LayoutParams ?: return
 
+        val toggleHeight = toggle.height.takeIf { it > 0 } ?: dp(32)
         val startMargin = toggleParams.bottomMargin
-        val endMargin = if (fromVisible) dp(8) else (targetHeight - dp(10)).coerceAtLeast(dp(8))
+        val endMargin = if (fromVisible) {
+            dp(6)
+        } else {
+            (targetHeight - toggleHeight).coerceAtLeast(0)
+        }
         val startRotation = toggle.rotation
         val endRotation = if (fromVisible) 180f else 0f
 
+        beginWindowResizeTransition()
         if (!fromVisible) {
+            setCardRowBottomGap(0)
             isDockVisible = true
             root.visibility = View.VISIBLE
             rootParams.height = 0
@@ -437,6 +585,7 @@ class MainActivity : AppCompatActivity() {
                     (startMargin + (endMargin - startMargin) * fraction).roundToInt()
                 toggle.layoutParams = toggleParams
                 toggle.rotation = startRotation + (endRotation - startRotation) * fraction
+                updateDockDividerHeights(rootParams.height)
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
@@ -448,6 +597,7 @@ class MainActivity : AppCompatActivity() {
                         root.layoutParams = rootParams
                         isDockVisible = false
                         toggle.contentDescription = getString(R.string.dock_expand)
+                        setCardRowBottomGap(42)
                     } else {
                         root.visibility = View.VISIBLE
                         root.alpha = 1f
@@ -456,10 +606,12 @@ class MainActivity : AppCompatActivity() {
                         root.layoutParams = rootParams
                         isDockVisible = true
                         toggle.contentDescription = getString(R.string.dock_collapse)
+                        setCardRowBottomGap(0)
                     }
                     dockAnimator = null
                     updateDockTogglePosition()
                     applyDockScale()
+                    finishWindowResizeTransition()
                 }
             })
             start()
@@ -475,6 +627,7 @@ class MainActivity : AppCompatActivity() {
             params.height = targetHeight
             root.layoutParams = params
             root.requestLayout()
+            updateDockDividerHeights(targetHeight)
         }
         updateDockTogglePosition()
         binding.dock.root.post { applyDockScale() }
@@ -484,12 +637,23 @@ class MainActivity : AppCompatActivity() {
         if (dockAnimator?.isRunning == true) return
         val params = binding.dockToggle.layoutParams as? FrameLayout.LayoutParams ?: return
         val targetHeight = dp(preferences.bottomBarHeightDp)
+        val toggleHeight = binding.dockToggle.height.takeIf { it > 0 } ?: dp(32)
         params.bottomMargin = if (isDockVisible) {
-            (targetHeight - dp(10)).coerceAtLeast(dp(8))
+            (targetHeight - toggleHeight).coerceAtLeast(0)
         } else {
-            dp(8)
+            dp(6)
         }
         binding.dockToggle.layoutParams = params
+    }
+
+    private fun setCardRowBottomGap(gapDp: Int) {
+        val params = binding.cardRow.layoutParams as? LinearLayout.LayoutParams ?: return
+        val gap = dp(gapDp)
+        if (params.bottomMargin != gap) {
+            params.bottomMargin = gap
+            binding.cardRow.layoutParams = params
+            binding.cardRow.requestLayout()
+        }
     }
 
     private fun applyDockScale() {
@@ -498,31 +662,32 @@ class MainActivity : AppCompatActivity() {
         val heightScale = heightPx / dpFloat(84f)
         val widthScale = resources.displayMetrics.widthPixels / dpFloat(900f)
         val scale = min(heightScale, widthScale).coerceIn(0.42f, 1.4f)
+        updateDockDividerHeights(heightPx)
 
-        resizeView(dock.dockMenu, 44, 44, scale)
-        resizeView(dock.dockSettings, 44, 44, scale)
-        resizeView(dock.dockWeatherIconBg, 38, 38, scale)
-        resizeView(dock.dockAlbumArt, 40, 40, scale)
-        resizeView(dock.dockPrevious, 30, 30, scale)
-        resizeView(dock.dockPlayPause, 30, 30, scale)
-        resizeView(dock.dockNext, 30, 30, scale)
-        resizeView(dock.dockVolumeDown, 40, 40, scale)
-        resizeView(dock.dockVolumeUp, 40, 40, scale)
-        resizeView(dock.dockBluetooth, 40, 40, scale)
-        resizeView(dock.dockWifi, 40, 40, scale)
-        resizeView(dock.cpuGauge, 58, 44, scale)
-        resizeView(dock.memGauge, 58, 44, scale)
-        resizeView(dock.tempGauge, 58, 44, scale)
+        resizeView(dockBindings.actions.dockMenu, 44, 44, scale)
+        resizeView(dockBindings.actions.dockSettings, 44, 44, scale)
+        resizeView(dockBindings.weather.dockWeatherIconBg, 38, 38, scale)
+        resizeView(dockBindings.media.dockAlbumArt, 40, 40, scale)
+        resizeView(dockBindings.media.dockPrevious, 30, 30, scale)
+        resizeView(dockBindings.media.dockPlayPause, 30, 30, scale)
+        resizeView(dockBindings.media.dockNext, 30, 30, scale)
+        resizeView(dockBindings.connectivity.dockVolumeDown, 40, 40, scale)
+        resizeView(dockBindings.connectivity.dockVolumeUp, 40, 40, scale)
+        resizeView(dockBindings.connectivity.dockBluetooth, 40, 40, scale)
+        resizeView(dockBindings.connectivity.dockWifi, 40, 40, scale)
+        resizeView(dockBindings.performance.cpuGauge, 58, 44, scale)
+        resizeView(dockBindings.performance.memGauge, 58, 44, scale)
+        resizeView(dockBindings.performance.tempGauge, 58, 44, scale)
 
-        resizeIcon(dock.dockWeatherIcon, 19f, scale)
-        (dock.dockAlbumArt.getChildAt(0) as? ImageView)?.let { resizeIcon(it, 20f, scale) }
+        resizeIcon(dockBindings.weather.dockWeatherIcon, 19f, scale)
+        (dockBindings.media.dockAlbumArt.getChildAt(0) as? ImageView)?.let { resizeIcon(it, 20f, scale) }
 
-        setTextSize(dock.dockMediaTitle, 13f, scale)
-        setTextSize(dock.dockMediaArtist, 10f, scale)
-        setTextSize(dock.dockWeatherTemp, 13f, scale)
-        setTextSize(dock.dockWeatherDesc, 9f, scale)
-        setTextSize(dock.dockDate, 10f, scale)
-        setTextSize(dock.dockClock, 26f, scale)
+        setTextSize(dockBindings.media.dockMediaTitle, 13f, scale)
+        setTextSize(dockBindings.media.dockMediaArtist, 10f, scale)
+        setTextSize(dockBindings.weather.dockWeatherTemp, 13f, scale)
+        setTextSize(dockBindings.weather.dockWeatherDesc, 9f, scale)
+        setTextSize(dockBindings.clock.dockDate, 10f, scale)
+        setTextSize(dockBindings.clock.dockClock, 26f, scale)
 
         val horizontalPadding = dp(6f * scale)
         dock.dockBar.setPadding(horizontalPadding, 0, horizontalPadding, 0)
@@ -564,14 +729,34 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun requestBluetoothPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        if (ContextCompat.checkSelfPermission(
+    private fun requestRuntimePermissions() {
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_BLUETOOTH)
+            permissions += Manifest.permission.BLUETOOTH_CONNECT
+        }
+        if (!LocationProvider.hasPermission(this)) {
+            permissions += Manifest.permission.ACCESS_FINE_LOCATION
+            permissions += Manifest.permission.ACCESS_COARSE_LOCATION
+        }
+        if (permissions.isNotEmpty()) {
+            requestPermissions(
+                permissions.toTypedArray(),
+                REQUEST_RUNTIME_PERMISSIONS
+            )
+        }
+    }
+
+    private fun requestCurrentLocation() {
+        LocationProvider.requestCurrent(this) { coordinates ->
+            if (coordinates != null) {
+                currentCoordinates = coordinates
+                lifecycleScope.launch { fetchWeatherOnce() }
+            }
         }
     }
 
@@ -626,30 +811,37 @@ class MainActivity : AppCompatActivity() {
         weatherJob?.cancel()
         weatherJob = lifecycleScope.launch {
             while (isActive) {
-                val weather = WeatherRepository.fetchCurrent(this@MainActivity)
-                if (weather != null) {
-                    lastWeather = weather
-                    updateWeatherUi(weather)
-                } else if (lastWeather == null) {
-                    binding.dock.dockWeatherTemp.text = getString(R.string.weather_unavailable)
-                    binding.dock.dockWeatherDesc.text = getString(R.string.weather_unavailable)
+                LocationProvider.getLastKnown(this@MainActivity)?.let {
+                    currentCoordinates = it
                 }
+                fetchWeatherOnce()
                 delay(if (lastWeather == null) 60_000L else WEATHER_REFRESH_MS)
             }
         }
     }
 
+    private suspend fun fetchWeatherOnce() {
+        val weather = WeatherRepository.fetchCurrent(
+            this,
+            currentCoordinates.latitude,
+            currentCoordinates.longitude
+        )
+        if (weather != null) {
+            lastWeather = weather
+            updateWeatherUi(weather)
+        } else if (lastWeather == null) {
+            dockBindings.weather.dockWeatherTemp.text = getString(R.string.weather_unavailable)
+            dockBindings.weather.dockWeatherDesc.text = getString(R.string.weather_unavailable)
+        }
+    }
+
     private fun updateWeatherUi(weather: WeatherInfo) {
         val isSunny = weather.iconRes == R.drawable.ic_sun
-        binding.dock.dockWeatherTemp.text =
+        dockBindings.weather.dockWeatherTemp.text =
             getString(R.string.weather_temperature, weather.temperatureC)
-        binding.dock.dockWeatherDesc.text = getString(
-            R.string.weather_description_city,
-            weather.description,
-            getString(R.string.weather_city_short)
-        )
-        binding.dock.dockWeatherIcon.setImageResource(weather.iconRes)
-        binding.dock.dockWeatherIcon.imageTintList = ColorStateList.valueOf(
+        dockBindings.weather.dockWeatherDesc.text = weather.description
+        dockBindings.weather.dockWeatherIcon.setImageResource(weather.iconRes)
+        dockBindings.weather.dockWeatherIcon.imageTintList = ColorStateList.valueOf(
             ContextCompat.getColor(this, if (isSunny) R.color.black else R.color.white)
         )
         val background = when (weather.iconRes) {
@@ -659,10 +851,10 @@ class MainActivity : AppCompatActivity() {
             R.drawable.ic_weather_snow -> R.color.accent_cyan
             else -> R.color.accent_gray
         }
-        binding.dock.dockWeatherIconBg.backgroundTintList = ColorStateList.valueOf(
+        dockBindings.weather.dockWeatherIconBg.backgroundTintList = ColorStateList.valueOf(
             ContextCompat.getColor(this, background)
         )
-        binding.dock.dockWeatherIcon.contentDescription = getString(
+        dockBindings.weather.dockWeatherIcon.contentDescription = getString(
             R.string.weather_description_city,
             getString(R.string.weather_temperature, weather.temperatureC),
             weather.description
@@ -776,18 +968,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateClockAndDate() {
         val now = Date()
-        binding.dock.dockClock.text = clockFormat.format(now)
-        binding.dock.dockDate.text = dateFormat.format(now)
+        dockBindings.clock.dockClock.text = clockFormat.format(now)
+        dockBindings.clock.dockDate.text = dateFormat.format(now)
     }
 
     private fun updatePerformance() {
         val snapshot = performanceMonitor.sample()
         val cpu = snapshot.cpuPercent
-        binding.dock.cpuGauge.setValue(cpu ?: 0, cpu?.let { "$it%" } ?: "--")
+        dockBindings.performance.cpuGauge.setValue(cpu ?: 0, cpu?.let { "$it%" } ?: "--")
         val memory = snapshot.memoryPercent
-        binding.dock.memGauge.setValue(memory ?: 0, memory?.let { "$it%" } ?: "--")
+        dockBindings.performance.memGauge.setValue(memory ?: 0, memory?.let { "$it%" } ?: "--")
         val temperature = snapshot.temperatureC?.roundToInt()?.coerceIn(0, 100)
-        binding.dock.tempGauge.setValue(
+        dockBindings.performance.tempGauge.setValue(
             temperature ?: 0,
             temperature?.let { "$it°C" } ?: "--°C"
         )
@@ -797,7 +989,7 @@ class MainActivity : AppCompatActivity() {
         val wifi = wifiManager
         val wifiEnabled = runCatching { wifi?.isWifiEnabled == true }.getOrDefault(false)
         applyToggleState(
-            binding.dock.dockWifi,
+            dockBindings.connectivity.dockWifi,
             wifiEnabled,
             R.color.accent_blue,
             if (wifi == null) R.string.dock_wifi_unavailable else if (wifiEnabled) {
@@ -810,7 +1002,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = runCatching { bluetoothManager?.adapter }.getOrNull()
         val bluetoothEnabled = runCatching { adapter?.isEnabled == true }.getOrDefault(false)
         applyToggleState(
-            binding.dock.dockBluetooth,
+            dockBindings.connectivity.dockBluetooth,
             bluetoothEnabled,
             R.color.accent_blue,
             if (adapter == null) R.string.dock_bt_unavailable else if (bluetoothEnabled) {
@@ -845,8 +1037,8 @@ class MainActivity : AppCompatActivity() {
     private fun updateDockMediaIcon() {
         val icon = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
         val description = getString(if (isPlaying) R.string.media_pause else R.string.media_play)
-        binding.dock.dockPlayPause.setImageResource(icon)
-        binding.dock.dockPlayPause.contentDescription = description
+        dockBindings.media.dockPlayPause.setImageResource(icon)
+        dockBindings.media.dockPlayPause.contentDescription = description
     }
 
     private fun showPowerDialog() {
@@ -870,17 +1062,14 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).roundToInt()
+    private fun dp(value: Int): Int = DisplayUtils.dip2px(value.toFloat())
 
-    private fun dp(value: Float): Int =
-        (value * resources.displayMetrics.density).roundToInt()
+    private fun dp(value: Float): Int = DisplayUtils.dip2px(value)
 
-    private fun dpFloat(value: Float): Float =
-        value * resources.displayMetrics.density
+    private fun dpFloat(value: Float): Float = DisplayUtils.dip2pxF(value)
 
     private companion object {
-        const val REQUEST_BLUETOOTH = 1001
+        const val REQUEST_RUNTIME_PERMISSIONS = 1001
         const val WEATHER_REFRESH_MS = 10 * 60 * 1000L
     }
 }

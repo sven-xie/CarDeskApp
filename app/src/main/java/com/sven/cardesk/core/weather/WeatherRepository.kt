@@ -14,13 +14,15 @@ data class WeatherInfo(
 
 object WeatherRepository {
 
-    private const val LATITUDE = 24.73
-    private const val LONGITUDE = 118.17
-
     private val api: WeatherApi by lazy { WeatherApi.create() }
 
-    suspend fun fetchCurrent(context: Context): WeatherInfo? = runCatching {
-        val current = api.getCurrentWeather(LATITUDE, LONGITUDE).current ?: return@runCatching null
+    suspend fun fetchCurrent(
+        context: Context,
+        latitude: Double,
+        longitude: Double
+    ): WeatherInfo? = runCatching {
+        val current = api.getCurrentWeather(latitude, longitude).current
+            ?: return@runCatching null
         val temperature = current.temperature2m ?: return@runCatching null
         val visual = weatherVisual(context, current.weatherCode)
         WeatherInfo(

@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.sven.cardesk.R
+import com.sven.cardesk.utils.DisplayUtils
 import kotlin.math.min
 
 /**
@@ -21,7 +22,6 @@ class CylinderGaugeView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private val density = resources.displayMetrics.density
     private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = ContextCompat.getColor(context, R.color.card_surface_alt)
@@ -75,11 +75,11 @@ class CylinderGaugeView @JvmOverloads constructor(
         super.onDraw(canvas)
         if (width <= 0 || height <= 0) return
 
-        val cylinderWidth = min(width * 0.22f, 12f * density).coerceAtLeast(6f * density)
-        val top = 3f * density
-        val bottom = height - 3f * density
+        val cylinderWidth = min(width * 0.22f, DisplayUtils.dip2pxF(12f)).coerceAtLeast(DisplayUtils.dip2pxF(6f))
+        val top = DisplayUtils.dip2pxF(3f)
+        val bottom = height - DisplayUtils.dip2pxF(3f)
         if (bottom <= top) return
-        val left = 1f * density
+        val left = DisplayUtils.dip2pxF(1f)
         val radius = cylinderWidth / 2f
 
         trackRect.set(left, top, left + cylinderWidth, bottom)
@@ -91,7 +91,7 @@ class CylinderGaugeView @JvmOverloads constructor(
             canvas.drawRoundRect(fillRect, radius, radius, fillPaint)
         }
 
-        val textLeft = left + cylinderWidth + 5f * density
+        val textLeft = left + cylinderWidth + DisplayUtils.dip2pxF(5f)
         labelPaint.textSize = height * 0.22f
         valuePaint.textSize = height * 0.26f
         val labelY = top + height * 0.38f

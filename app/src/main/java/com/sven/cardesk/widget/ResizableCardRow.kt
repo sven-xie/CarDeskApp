@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.widget.LinearLayout
 import com.sven.cardesk.R
+import com.sven.cardesk.utils.DisplayUtils
 import kotlin.math.max
 
 class ResizableCardRow @JvmOverloads constructor(
@@ -149,5 +150,5 @@ class ResizableCardRow @JvmOverloads constructor(
         return FloatArray(3) { safe[it] / sum }
     }
 
-    private fun dp(value: Float): Float = value * resources.displayMetrics.density
+    private fun dp(value: Float): Float = DisplayUtils.dip2pxF(value)
 }

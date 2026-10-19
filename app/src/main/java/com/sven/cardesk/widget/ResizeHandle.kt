@@ -9,6 +9,7 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.sven.cardesk.R
+import com.sven.cardesk.utils.DisplayUtils
 import kotlin.math.min
 
 class ResizeHandle @JvmOverloads constructor(
@@ -39,8 +40,8 @@ class ResizeHandle @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val widthPx = 4f * resources.displayMetrics.density
-        val heightPx = min(height * 0.32f, 52f * resources.displayMetrics.density)
+        val widthPx = DisplayUtils.dip2pxF(4f)
+        val heightPx = min(height * 0.32f, DisplayUtils.dip2pxF(52f))
         val left = (width - widthPx) / 2f
         val top = (height - heightPx) / 2f
         rect.set(left, top, left + widthPx, top + heightPx)

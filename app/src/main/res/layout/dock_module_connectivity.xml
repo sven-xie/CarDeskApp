@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/dockBluetooth"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_quick_button"
+        android:backgroundTint="@color/card_surface_alt"
+        android:contentDescription="@string/dock_bt_off"
+        android:padding="10dp"
+        android:src="@drawable/ic_bluetooth"
+        app:tint="@color/text_tertiary" />
+
+    <ImageButton
+        android:id="@+id/dockWifi"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_quick_button"
+        android:backgroundTint="@color/card_surface_alt"
+        android:contentDescription="@string/dock_wifi_off"
+        android:padding="10dp"
+        android:src="@drawable/ic_wifi"
+        app:tint="@color/text_tertiary" />
+
+    <ImageButton
+        android:id="@+id/dockVolumeDown"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_quick_button"
+        android:backgroundTint="@color/accent_purple"
+        android:contentDescription="@string/dock_volume_down"
+        android:padding="10dp"
+        android:src="@drawable/ic_volume_down"
+        app:tint="@color/white" />
+
+    <ImageButton
+        android:id="@+id/dockVolumeUp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_quick_button"
+        android:backgroundTint="@color/accent_purple"
+        android:contentDescription="@string/dock_volume_up"
+        android:padding="10dp"
+        android:src="@drawable/ic_volume_up"
+        app:tint="@color/white" />
+</LinearLayout>
