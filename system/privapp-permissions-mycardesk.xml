@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <permissions>
     <privapp-permissions package="com.sven.cardesk">
-        <!-- Needed to inject touch events into the three virtual app windows. -->
+        <!-- Needed to inject touch events into the virtual app windows. -->
         <permission name="android.permission.INJECT_EVENTS" />
-        <!-- Needed to launch and manage third-party tasks on virtual displays. -->
-        <permission name="android.permission.MANAGE_ACTIVITY_TASKS" />
+        <!-- Android 10 task/stack control used by CarDesk's window manager. -->
+        <permission name="android.permission.MANAGE_ACTIVITY_STACKS" />
+        <permission name="android.permission.GET_TASKS" />
+        <permission name="android.permission.REAL_GET_TASKS" />
+        <permission name="android.permission.REMOVE_TASKS" />
         <permission name="android.permission.INTERNAL_SYSTEM_WINDOW" />
         <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
         <!-- Needed when a virtual window hosts a FLAG_SECURE app. -->
         <permission name="android.permission.CAPTURE_SECURE_VIDEO_OUTPUT" />
+        <permission name="android.permission.CAPTURE_VIDEO_OUTPUT" />
         <!-- CPU usage / kernel temperature via HardwarePropertiesManager. -->
         <permission name="android.permission.DEVICE_POWER" />
         <!-- Closing a CarDesk window stops the app before releasing its display. -->
         <permission name="android.permission.FORCE_STOP_PACKAGES" />
-        <!-- Bottom bar connectivity toggles. -->
-        <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
-        <permission name="android.permission.NETWORK_SETTINGS" />
     </privapp-permissions>
 </permissions>

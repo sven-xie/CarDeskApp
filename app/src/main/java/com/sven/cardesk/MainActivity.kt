@@ -164,6 +164,26 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacks(statusRunnable)
         handler.post(statusRunnable)
         binding.dock.root.post { applyDockScale() }
+        // Android 10 may dispatch the initial status-bar visibility after
+        // onCreate; re-apply immersive mode once the window is settled.
+        window.decorView.postDelayed({
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }, 800L)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
     }
 
     override fun onPause() {
