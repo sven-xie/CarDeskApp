@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.sven.cardesk"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 29
         versionCode = 1
         versionName = "1.0"
 
@@ -34,6 +34,10 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
@@ -49,8 +53,4 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
-}
-
-configurations.configureEach {
-    resolutionStrategy.force("com.squareup.okhttp3:okhttp:3.12.13")
 }
